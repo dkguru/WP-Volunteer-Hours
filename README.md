@@ -5,8 +5,8 @@ Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
 Stable tag: 1.1.5
-License: GPLv2 (or later updates)
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+License: GPL-3.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 Let (logged-in) volunteers register their hours against organization projects, correct their own entries, and give admins per-user and per-project CSV reports.
 
