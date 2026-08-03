@@ -1,0 +1,65 @@
+/* Volunteer Hours — deliberately minimal styling. */
+
+.vh-wrap { max-width: 800px; }
+.vh-form p { margin: 0 0 12px; }
+.vh-form label { font-weight: 600; }
+.vh-project { font-weight: normal; }
+.vh-table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+.vh-table th, .vh-table td { border: 1px solid #bbb; padding: 6px 8px; text-align: left; vertical-align: top; }
+.vh-table tfoot th { background: #f0f0f0; }
+.vh-notice { padding: 8px 12px; background: #e7f5e7; border: 1px solid #9c9; }
+.vh-notice.vh-error { background: #fdeaea; border-color: #d99; }
+.vh-inline { display: inline; }
+.vh-link { background: none; border: none; color: #0645ad; cursor: pointer; padding: 0; text-decoration: underline; font: inherit; }
+.vh-button { display: inline-block; padding: 6px 14px; border: 1px solid #666; text-decoration: none; margin-right: 8px; }
+.vh-month-filter { margin: 8px 0 4px; }
+
+/* Admin */
+.vh-admin .vh-logo { height: 28px; vertical-align: middle; margin-right: 6px; }
+.vh-inline-form { margin: 12px 0; }
+.vh-inline-form label { margin-right: 10px; }
+.vh-admin-table { margin-top: 12px; }
+.vh-danger { color: #b32d2e !important; }
+.vh-report-cols { display: flex; gap: 32px; flex-wrap: wrap; margin-top: 16px; }
+.vh-report-cols > div { flex: 1 1 360px; }
+
+@media print {
+	.vh-noprint, .vh-form, .vh-month-filter, h3:first-of-type { display: none; }
+}
+
+/* Review / payment status */
+.vh-status-pending { color: #8a6d00; }
+.vh-status-reviewed { color: #0e746c; font-weight: 600; }
+.vh-status-paid { color: #1a7a1a; font-weight: 600; }
+
+/* Donation message (plugin admin screens) */
+.vh-donate {
+	position: relative;
+	display: flex;
+	gap: 16px;
+	align-items: flex-start;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid #0e746c;
+	border-radius: 3px;
+	padding: 16px 44px 16px 18px;
+	margin: 16px 0;
+	max-width: 780px;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+}
+.vh-donate-logo { width: 48px; height: 48px; flex: 0 0 48px; }
+.vh-donate-body h2 { margin: 0 0 6px; font-size: 16px; }
+.vh-donate-body p { margin: 0 0 10px; max-width: 62ch; }
+.vh-donate-actions { margin-bottom: 0 !important; }
+.vh-donate-later { margin-left: 12px; color: #646970; text-decoration: none; }
+.vh-donate-later:hover { color: #135e96; }
+.vh-donate-close {
+	position: absolute;
+	top: 6px;
+	right: 10px;
+	font-size: 22px;
+	line-height: 1;
+	color: #787c82;
+	text-decoration: none;
+}
+.vh-donate-close:hover { color: #b32d2e; }
