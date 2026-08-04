@@ -3,11 +3,11 @@
  * Plugin Name:       Volunteer Hours
  * Plugin URI:        https://livingislands.org/
  * Description:       Lets logged-in volunteers register hours against the organization's projects, view and correct their own entries, and gives administrators per-user and per-project hour reports with CSV export. Use the [volunteer_hours] shortcode on any page.
- * Version:           1.1.5
+ * Version:           1.1.6
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Living Islands
-  * License:           GPL-3.0-or-later
+ * License:           GPL-3.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain:       volunteer-hours
  */
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'VH_VERSION', '1.1.5' );
+define( 'VH_VERSION', '1.1.6' );
 define( 'VH_PLUGIN_FILE', __FILE__ );
 define( 'VH_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VH_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

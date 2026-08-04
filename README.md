@@ -1,10 +1,11 @@
 === Volunteer Hours ===
+
 Contributors: livingislands
 Tags: volunteers, hours, time tracking, reports, nonprofit
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.5
+Stable tag: 1.1.6
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -61,7 +62,7 @@ Projects with registered hours cannot be deleted, only deactivated, so history i
 
 == Changelog ==
 
-= 1.1.5 =
+= 1.1.6 =
 * Added: a dismissible message on the Volunteer Hours admin screens inviting support for Living Islands, linking to https://donorbox.org/linp
   Closing it hides the message for three months, per administrator. The URL can be changed with the 'vh_donation_url' filter.
 
