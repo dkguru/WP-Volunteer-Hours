@@ -3,13 +3,13 @@
 Contributors: livingislands
 Tags: volunteers, hours, time tracking, reports, nonprofit
 Requires at least: 5.8
-Tested up to: 6.8
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 1.1.13
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Let (logged-in) volunteers register their hours against organization projects, correct their own entries, and give admins per-user and per-project CSV reports.
+Volunteers log hours against your projects and fix their own entries; admins get per-user and per-project reports with CSV export.
 
 == Description ==
 

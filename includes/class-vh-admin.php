@@ -97,7 +97,7 @@ class VH_Admin {
 		$proj_map = array();
 		foreach ( $projects as $old => $pr ) {
 			if ( $preserve_ids && $old > 0 ) {
-				$ok = $wpdb->insert( $p . 'vh_projects', array( 'id' => $old, 'name' => $pr['name'], 'active' => $pr['active'], 'created_at' => $pr['created_at'] ), array( '%d', '%s', '%d', '%s' ) );
+				$ok = $wpdb->insert( $p . 'vh_projects', array( 'id' => $old, 'name' => $pr['name'], 'active' => $pr['active'], 'created_at' => $pr['created_at'] ), array( '%d', '%s', '%d', '%s' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and values go through $wpdb->prepare() or $wpdb->insert() formats. Caching is not appropriate for these admin write/verify operations.
 				if ( false === $ok ) {
 					/* translators: 1: project name, 2: old id, 3: database error text */
 					$result['errors'][] = sprintf( __( 'Failed to insert project %1$s (old id %2$d): %3$s', 'volunteer-hours' ), $pr['name'], $old, $wpdb->last_error );
@@ -105,7 +105,7 @@ class VH_Admin {
 				}
 				$proj_map[ $old ] = (int) $old;
 			} else {
-				$ok = $wpdb->insert( $p . 'vh_projects', array( 'name' => $pr['name'], 'active' => $pr['active'], 'created_at' => $pr['created_at'] ), array( '%s', '%d', '%s' ) );
+				$ok = $wpdb->insert( $p . 'vh_projects', array( 'name' => $pr['name'], 'active' => $pr['active'], 'created_at' => $pr['created_at'] ), array( '%s', '%d', '%s' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and values go through $wpdb->prepare() or $wpdb->insert() formats. Caching is not appropriate for these admin write/verify operations.
 				if ( false === $ok ) {
 					/* translators: 1: project name, 2: database error text */
 					$result['errors'][] = sprintf( __( 'Failed to insert project %1$s: %2$s', 'volunteer-hours' ), $pr['name'], $wpdb->last_error );
@@ -127,7 +127,7 @@ class VH_Admin {
 		// Insert entries and entry_projects
 		foreach ( $entries as $en ) {
 			if ( $preserve_ids && $en['old_id'] > 0 ) {
-				$ok = $wpdb->insert( $p . 'vh_entries', array( 'id' => $en['old_id'], 'user_id' => $en['user_id'], 'work_date' => $en['work_date'], 'hours' => $en['hours'], 'description' => $en['description'], 'reviewed' => $en['reviewed'], 'paid' => $en['paid'], 'created_at' => $en['created_at'], 'updated_at' => $en['updated_at'] ), array( '%d', '%d', '%s', '%f', '%s', '%d', '%d', '%s', '%s' ) );
+				$ok = $wpdb->insert( $p . 'vh_entries', array( 'id' => $en['old_id'], 'user_id' => $en['user_id'], 'work_date' => $en['work_date'], 'hours' => $en['hours'], 'description' => $en['description'], 'reviewed' => $en['reviewed'], 'paid' => $en['paid'], 'created_at' => $en['created_at'], 'updated_at' => $en['updated_at'] ), array( '%d', '%d', '%s', '%f', '%s', '%d', '%d', '%s', '%s' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and values go through $wpdb->prepare() or $wpdb->insert() formats. Caching is not appropriate for these admin write/verify operations.
 				if ( false === $ok ) {
 					/* translators: 1: old entry id, 2: database error text */
 					$result['errors'][] = sprintf( __( 'Failed to insert entry old id %1$d: %2$s', 'volunteer-hours' ), $en['old_id'], $wpdb->last_error );
@@ -135,7 +135,7 @@ class VH_Admin {
 				}
 				$new_eid = (int) $en['old_id'];
 			} else {
-				$ok = $wpdb->insert( $p . 'vh_entries', array( 'user_id' => $en['user_id'], 'work_date' => $en['work_date'], 'hours' => $en['hours'], 'description' => $en['description'], 'reviewed' => $en['reviewed'], 'paid' => $en['paid'], 'created_at' => $en['created_at'], 'updated_at' => $en['updated_at'] ), array( '%d', '%s', '%f', '%s', '%d', '%d', '%s', '%s' ) );
+				$ok = $wpdb->insert( $p . 'vh_entries', array( 'user_id' => $en['user_id'], 'work_date' => $en['work_date'], 'hours' => $en['hours'], 'description' => $en['description'], 'reviewed' => $en['reviewed'], 'paid' => $en['paid'], 'created_at' => $en['created_at'], 'updated_at' => $en['updated_at'] ), array( '%d', '%s', '%f', '%s', '%d', '%d', '%s', '%s' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and values go through $wpdb->prepare() or $wpdb->insert() formats. Caching is not appropriate for these admin write/verify operations.
 				if ( false === $ok ) {
 					/* translators: 1: user id, 2: database error text */
 					$result['errors'][] = sprintf( __( 'Failed to insert entry for user %1$d: %2$s', 'volunteer-hours' ), $en['user_id'], $wpdb->last_error );
@@ -149,7 +149,7 @@ class VH_Admin {
 				$old_pids = array_filter( array_map( 'intval', explode( ',', $en['project_ids'] ) ) );
 				foreach ( $old_pids as $op ) {
 					if ( isset( $proj_map[ $op ] ) ) {
-						$wpdb->insert( $p . 'vh_entry_projects', array( 'entry_id' => $new_eid, 'project_id' => $proj_map[ $op ] ), array( '%d', '%d' ) );
+						$wpdb->insert( $p . 'vh_entry_projects', array( 'entry_id' => $new_eid, 'project_id' => $proj_map[ $op ] ), array( '%d', '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and values go through $wpdb->prepare() or $wpdb->insert() formats. Caching is not appropriate for these admin write/verify operations.
 					}
 				}
 			}
@@ -299,7 +299,7 @@ class VH_Admin {
 			return;
 		}
 		if ( ! isset( $_POST['vh_nonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['vh_nonce'] ), 'vh_admin' ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'wp-volunteer-hours' ) );
+			wp_die( esc_html__( 'Security check failed.', 'volunteer-hours' ) );
 		}
 
 		$action   = sanitize_key( $_POST['vh_admin_action'] );
@@ -318,55 +318,59 @@ class VH_Admin {
 		switch ( $action ) {
 			case 'add_project':
 				$res = VH_Data::add_project( isset( $_POST['vh_name'] ) ? wp_unslash( $_POST['vh_name'] ) : '' ); // phpcs:ignore
-				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project added.', 'wp-volunteer-hours' );
+				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project added.', 'volunteer-hours' );
 				break;
 
 			case 'rename_project':
 				$res = VH_Data::rename_project( isset( $_POST['vh_id'] ) ? (int) $_POST['vh_id'] : 0, isset( $_POST['vh_name'] ) ? wp_unslash( $_POST['vh_name'] ) : '' ); // phpcs:ignore
-				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project renamed.', 'wp-volunteer-hours' );
+				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project renamed.', 'volunteer-hours' );
 				break;
 
 			case 'toggle_project':
 				VH_Data::set_project_active( isset( $_POST['vh_id'] ) ? (int) $_POST['vh_id'] : 0, ! empty( $_POST['vh_active'] ) );
-				$msg = __( 'Project updated.', 'wp-volunteer-hours' );
+				$msg = __( 'Project updated.', 'volunteer-hours' );
 				break;
 
 			case 'delete_project':
 				$res = VH_Data::delete_project( isset( $_POST['vh_id'] ) ? (int) $_POST['vh_id'] : 0 );
-				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project deleted.', 'wp-volunteer-hours' );
+				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project deleted.', 'volunteer-hours' );
 				break;
 
 			case 'restore_backup':
 				// Handle uploaded backup CSV and restore data.
-				if ( empty( $_FILES['vh_backup_file'] ) || ! is_uploaded_file( $_FILES['vh_backup_file']['tmp_name'] ) ) {
-					$msg = __( 'No backup file uploaded.', 'wp-volunteer-hours' );
+				// The nonce for this request is verified at the top of handle_actions().
+				$upload_tmp = isset( $_FILES['vh_backup_file']['tmp_name'] )
+					? sanitize_text_field( wp_unslash( $_FILES['vh_backup_file']['tmp_name'] ) )
+					: '';
+				if ( '' === $upload_tmp || ! is_uploaded_file( $upload_tmp ) ) {
+					$msg = __( 'No backup file uploaded.', 'volunteer-hours' );
 					break;
 				}
 				$replace = ! empty( $_POST['vh_restore_replace'] );
-				$tmp = $_FILES['vh_backup_file']['tmp_name'];
+				$tmp = $upload_tmp;
 				$preserve = ! empty( $_POST['vh_restore_preserve_ids'] );
 				$result = self::restore_backup_from_file( $tmp, $replace, $preserve );
 				if ( ! empty( $result['errors'] ) ) {
-					$msg = __( 'Restore completed with errors:', 'wp-volunteer-hours' ) . ' ' . implode( ' ; ', $result['errors'] );
+					$msg = __( 'Restore completed with errors:', 'volunteer-hours' ) . ' ' . implode( ' ; ', $result['errors'] );
 				} else {
-					$msg = __( 'Backup restored successfully.', 'wp-volunteer-hours' );
+					$msg = __( 'Backup restored successfully.', 'volunteer-hours' );
 				}
 				break;
 
 			case 'repair':
 				vh_activate();
-				$msg = __( 'Tables checked and repaired.', 'wp-volunteer-hours' );
+				$msg = __( 'Tables checked and repaired.', 'volunteer-hours' );
 				break;
 
 			case 'delete_entry':
 				VH_Data::delete_entry( isset( $_POST['vh_id'] ) ? (int) $_POST['vh_id'] : 0 );
-				$msg = __( 'Entry deleted.', 'wp-volunteer-hours' );
+				$msg = __( 'Entry deleted.', 'volunteer-hours' );
 				break;
 
 			case 'set_status':
 				$field = isset( $_POST['vh_field'] ) ? sanitize_key( $_POST['vh_field'] ) : '';
 				$res   = VH_Data::set_entry_status( isset( $_POST['vh_id'] ) ? (int) $_POST['vh_id'] : 0, $field, ! empty( $_POST['vh_value'] ) );
-				$msg   = is_wp_error( $res ) ? $res->get_error_message() : __( 'Status updated.', 'wp-volunteer-hours' );
+				$msg   = is_wp_error( $res ) ? $res->get_error_message() : __( 'Status updated.', 'volunteer-hours' );
 				break;
 
 			case 'update_entry':
@@ -382,7 +386,7 @@ class VH_Admin {
 							'project_ids' => isset( $_POST['vh_projects'] ) ? array_map( 'intval', (array) wp_unslash( $_POST['vh_projects'] ) ) : array(),
 						)
 					);
-					$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Entry updated.', 'wp-volunteer-hours' );
+					$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Entry updated.', 'volunteer-hours' );
 				}
 				break;
 		}
@@ -392,7 +396,7 @@ class VH_Admin {
 	}
 
 	private function notice() {
-		if ( ! empty( $_GET['vh_msg'] ) ) {
+		if ( ! empty( $_GET['vh_msg'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display filter, no state is changed. State-changing requests verify a nonce before reaching here.
 			echo '<div class="notice notice-info is-dismissible"><p>' . esc_html( sanitize_text_field( wp_unslash( $_GET['vh_msg'] ) ) ) . '</p></div>';
 		}
 	}
@@ -408,7 +412,7 @@ class VH_Admin {
 
 	public function page_projects() {
 		$projects = VH_Data::get_projects();
-		$edit_id  = isset( $_GET['vh_edit'] ) ? (int) $_GET['vh_edit'] : 0;
+		$edit_id  = isset( $_GET['vh_edit'] ) ? (int) $_GET['vh_edit'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display filter, no state is changed. State-changing requests verify a nonce before reaching here.
 		$this->header( __( 'Projects', 'volunteer-hours' ) );
 		?>
 		<p><?php esc_html_e( 'This list feeds the project checkboxes on the volunteer form. Deactivate a project to hide it from the form while keeping its history.', 'volunteer-hours' ); ?></p>
@@ -422,13 +426,13 @@ class VH_Admin {
 
 		<table class="widefat striped vh-admin-table">
 			<thead><tr>
-				<th><?php esc_html_e( 'Project', 'wp-volunteer-hours' ); ?></th>
-				<th><?php esc_html_e( 'Status', 'wp-volunteer-hours' ); ?></th>
-				<th><?php esc_html_e( 'Actions', 'wp-volunteer-hours' ); ?></th>
+				<th><?php esc_html_e( 'Project', 'volunteer-hours' ); ?></th>
+				<th><?php esc_html_e( 'Status', 'volunteer-hours' ); ?></th>
+				<th><?php esc_html_e( 'Actions', 'volunteer-hours' ); ?></th>
 			</tr></thead>
 			<tbody>
 			<?php if ( empty( $projects ) ) : ?>
-				<tr><td colspan="3"><?php esc_html_e( 'No projects yet. Add the first one above.', 'wp-volunteer-hours' ); ?></td></tr>
+				<tr><td colspan="3"><?php esc_html_e( 'No projects yet. Add the first one above.', 'volunteer-hours' ); ?></td></tr>
 			<?php endif; ?>
 			<?php foreach ( $projects as $pr ) : ?>
 				<tr>
@@ -439,28 +443,28 @@ class VH_Admin {
 								<input type="hidden" name="vh_admin_action" value="rename_project" />
 								<input type="hidden" name="vh_id" value="<?php echo esc_attr( $pr->id ); ?>" />
 								<input type="text" name="vh_name" value="<?php echo esc_attr( $pr->name ); ?>" required />
-								<button type="submit" class="button"><?php esc_html_e( 'Save', 'wp-volunteer-hours' ); ?></button>
-								<a href="<?php echo esc_url( remove_query_arg( 'vh_edit' ) ); ?>"><?php esc_html_e( 'Cancel', 'wp-volunteer-hours' ); ?></a>
+								<button type="submit" class="button"><?php esc_html_e( 'Save', 'volunteer-hours' ); ?></button>
+								<a href="<?php echo esc_url( remove_query_arg( 'vh_edit' ) ); ?>"><?php esc_html_e( 'Cancel', 'volunteer-hours' ); ?></a>
 							</form>
 						<?php else : ?>
 							<?php echo esc_html( $pr->name ); ?>
 						<?php endif; ?>
 					</td>
-					<td><?php echo $pr->active ? esc_html__( 'Active', 'wp-volunteer-hours' ) : esc_html__( 'Inactive', 'wp-volunteer-hours' ); ?></td>
+					<td><?php echo $pr->active ? esc_html__( 'Active', 'volunteer-hours' ) : esc_html__( 'Inactive', 'volunteer-hours' ); ?></td>
 					<td>
-						<a href="<?php echo esc_url( add_query_arg( 'vh_edit', (int) $pr->id ) ); ?>"><?php esc_html_e( 'Rename', 'wp-volunteer-hours' ); ?></a>
+						<a href="<?php echo esc_url( add_query_arg( 'vh_edit', (int) $pr->id ) ); ?>"><?php esc_html_e( 'Rename', 'volunteer-hours' ); ?></a>
 						<form method="post" class="vh-inline">
 							<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
 							<input type="hidden" name="vh_admin_action" value="toggle_project" />
 							<input type="hidden" name="vh_id" value="<?php echo esc_attr( $pr->id ); ?>" />
 							<input type="hidden" name="vh_active" value="<?php echo $pr->active ? '' : '1'; ?>" />
-							<button type="submit" class="button-link"><?php echo $pr->active ? esc_html__( 'Deactivate', 'wp-volunteer-hours' ) : esc_html__( 'Activate', 'wp-volunteer-hours' ); ?></button>
+							<button type="submit" class="button-link"><?php echo $pr->active ? esc_html__( 'Deactivate', 'volunteer-hours' ) : esc_html__( 'Activate', 'volunteer-hours' ); ?></button>
 						</form>
-						<form method="post" class="vh-inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this project?', 'wp-volunteer-hours' ) ); ?>');">
+						<form method="post" class="vh-inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this project?', 'volunteer-hours' ) ); ?>');">
 							<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
 							<input type="hidden" name="vh_admin_action" value="delete_project" />
 							<input type="hidden" name="vh_id" value="<?php echo esc_attr( $pr->id ); ?>" />
-							<button type="submit" class="button-link vh-danger"><?php esc_html_e( 'Delete', 'wp-volunteer-hours' ); ?></button>
+							<button type="submit" class="button-link vh-danger"><?php esc_html_e( 'Delete', 'volunteer-hours' ); ?></button>
 						</form>
 					</td>
 				</tr>
@@ -475,12 +479,12 @@ class VH_Admin {
 
 	public function page_entries() {
 		$month      = isset( $_GET['vh_month'] ) && preg_match( '/^\d{4}-\d{2}$/', wp_unslash( $_GET['vh_month'] ) ) ? sanitize_text_field( wp_unslash( $_GET['vh_month'] ) ) : wp_date( 'Y-m' ); // phpcs:ignore
-		$user_id    = isset( $_GET['vh_user'] ) ? (int) $_GET['vh_user'] : 0;
-		$project_id = isset( $_GET['vh_project'] ) ? (int) $_GET['vh_project'] : 0;
+		$user_id    = isset( $_GET['vh_user'] ) ? (int) $_GET['vh_user'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display filter, no state is changed. State-changing requests verify a nonce before reaching here.
+		$project_id = isset( $_GET['vh_project'] ) ? (int) $_GET['vh_project'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display filter, no state is changed. State-changing requests verify a nonce before reaching here.
 		$status     = isset( $_GET['vh_status'] ) && in_array( $_GET['vh_status'], array( 'pending', 'reviewed', 'paid' ), true ) ? sanitize_key( $_GET['vh_status'] ) : ''; // phpcs:ignore
 		$from       = $month . '-01';
 		$to         = gmdate( 'Y-m-t', strtotime( $from ) );
-		$edit_id    = isset( $_GET['vh_edit'] ) ? (int) $_GET['vh_edit'] : 0;
+		$edit_id    = isset( $_GET['vh_edit'] ) ? (int) $_GET['vh_edit'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display filter, no state is changed. State-changing requests verify a nonce before reaching here.
 
 		$projects = VH_Data::get_projects();
 
@@ -639,10 +643,11 @@ class VH_Admin {
 		$rows   = array();
 		foreach ( $tables as $t ) {
 			$full   = $wpdb->prefix . $t;
-			$exists = (bool) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $full ) );
+			$exists = (bool) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $full ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and values go through $wpdb->prepare() or $wpdb->insert() formats. Caching is not appropriate for these admin write/verify operations.
 			$count  = $exists ? (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$full}" ) : null; // phpcs:ignore
 			$rows[] = array( $full, $exists, $count );
 		}
+		$db_version = $wpdb->get_var( 'SELECT VERSION()' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and values go through $wpdb->prepare() or $wpdb->insert() formats. Caching is not appropriate for these admin write/verify operations.
 		$cols_ok = (bool) $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$wpdb->prefix}vh_entries LIKE %s", 'reviewed' ) ); // phpcs:ignore
 		?>
 		<div class="vh-diagnostics" style="background:#fff;border:1px solid #c3c4c7;padding:10px 14px;margin:12px 0;max-width:640px;">
@@ -657,7 +662,7 @@ class VH_Admin {
 					</tr>
 				<?php endforeach; ?>
 				<tr><td style="padding-right:14px;"><?php esc_html_e( 'Review/paid columns', 'volunteer-hours' ); ?></td><td><?php echo $cols_ok ? esc_html__( 'OK', 'volunteer-hours' ) : '<span style="color:#b32d2e;font-weight:600;">' . esc_html__( 'MISSING', 'volunteer-hours' ) . '</span>'; ?></td></tr>
-				<tr><td style="padding-right:14px;"><?php esc_html_e( 'Database server', 'volunteer-hours' ); ?></td><td><code><?php echo esc_html( $wpdb->get_var( 'SELECT VERSION()' ) ); ?></code></td></tr>
+				<tr><td style="padding-right:14px;"><?php esc_html_e( 'Database server', 'volunteer-hours' ); ?></td><td><code><?php echo esc_html( $db_version ); ?></code></td></tr>
 			</table>
 			<form method="post" style="margin-top:8px;">
 				<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>

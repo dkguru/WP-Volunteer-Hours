@@ -23,7 +23,7 @@ class VH_Data {
 			$sql .= ' WHERE active = 1';
 		}
 		$sql .= ' ORDER BY name ASC';
-		$results = $wpdb->get_results( $sql );
+		$results = $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table; the only interpolated value is $wpdb->prefix and a fixed literal clause. Results are cached on the next line.
 		wp_cache_set( $cache_key, $results, 'vh_data', HOUR_IN_SECONDS );
 		return $results;
 	}
@@ -34,11 +34,11 @@ class VH_Data {
 		if ( '' === $name ) {
 			return new WP_Error( 'vh_empty', __( 'Project name cannot be empty.', 'volunteer-hours' ) );
 		}
-		$exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vh_projects WHERE name = %s", $name ) );
+		$exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vh_projects WHERE name = %s", $name ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 		if ( $exists ) {
 			return new WP_Error( 'vh_dup', __( 'A project with that name already exists.', 'volunteer-hours' ) );
 		}
-		$wpdb->insert(
+		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 			$wpdb->prefix . 'vh_projects',
 			array(
 				'name'       => $name,
@@ -56,13 +56,13 @@ class VH_Data {
 		if ( '' === $name ) {
 			return new WP_Error( 'vh_empty', __( 'Project name cannot be empty.', 'volunteer-hours' ) );
 		}
-		$wpdb->update( $wpdb->prefix . 'vh_projects', array( 'name' => $name ), array( 'id' => (int) $id ), array( '%s' ), array( '%d' ) );
+		$wpdb->update( $wpdb->prefix . 'vh_projects', array( 'name' => $name ), array( 'id' => (int) $id ), array( '%s' ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 		return true;
 	}
 
 	public static function set_project_active( $id, $active ) {
 		global $wpdb;
-		$wpdb->update( $wpdb->prefix . 'vh_projects', array( 'active' => $active ? 1 : 0 ), array( 'id' => (int) $id ), array( '%d' ), array( '%d' ) );
+		$wpdb->update( $wpdb->prefix . 'vh_projects', array( 'active' => $active ? 1 : 0 ), array( 'id' => (int) $id ), array( '%d' ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 		return true;
 	}
 
@@ -72,11 +72,11 @@ class VH_Data {
 	public static function delete_project( $id ) {
 		global $wpdb;
 		$id   = (int) $id;
-		$used = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}vh_entry_projects WHERE project_id = %d", $id ) );
+		$used = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}vh_entry_projects WHERE project_id = %d", $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 		if ( $used > 0 ) {
 			return new WP_Error( 'vh_in_use', __( 'This project has hours registered against it. Deactivate it instead of deleting.', 'volunteer-hours' ) );
 		}
-		$wpdb->delete( $wpdb->prefix . 'vh_projects', array( 'id' => $id ), array( '%d' ) );
+		$wpdb->delete( $wpdb->prefix . 'vh_projects', array( 'id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 		return true;
 	}
 
@@ -139,16 +139,16 @@ class VH_Data {
 			$data['paid']     = 0;
 			$fmt[]            = '%d';
 			$fmt[]            = '%d';
-			$ok = $wpdb->update( $wpdb->prefix . 'vh_entries', $data, array( 'id' => $entry_id ), $fmt, array( '%d' ) );
+			$ok = $wpdb->update( $wpdb->prefix . 'vh_entries', $data, array( 'id' => $entry_id ), $fmt, array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 			if ( false === $ok ) {
 				/* translators: %s: database error text */
 			return new WP_Error( 'vh_db', sprintf( __( 'The entry could not be saved (database error: %s). Please contact an administrator.', 'volunteer-hours' ), $wpdb->last_error ) );
 			}
-			$wpdb->delete( $wpdb->prefix . 'vh_entry_projects', array( 'entry_id' => $entry_id ), array( '%d' ) );
+			$wpdb->delete( $wpdb->prefix . 'vh_entry_projects', array( 'entry_id' => $entry_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 		} else {
 			$data['created_at'] = $now;
 			$fmt[]              = '%s';
-			$ok = $wpdb->insert( $wpdb->prefix . 'vh_entries', $data, $fmt );
+			$ok = $wpdb->insert( $wpdb->prefix . 'vh_entries', $data, $fmt ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 			$entry_id = (int) $wpdb->insert_id;
 			if ( false === $ok || ! $entry_id ) {
 				/* translators: %s: database error text */
@@ -157,7 +157,7 @@ class VH_Data {
 		}
 
 		foreach ( $valid_ids as $pid ) {
-			$wpdb->insert(
+			$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 				$wpdb->prefix . 'vh_entry_projects',
 				array(
 					'entry_id'   => $entry_id,
@@ -180,22 +180,22 @@ class VH_Data {
 		$id    = (int) $id;
 		$value = $value ? 1 : 0;
 		if ( ! in_array( $field, array( 'reviewed', 'paid' ), true ) ) {
-			return new WP_Error( 'vh_field', __( 'Invalid status field.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_field', __( 'Invalid status field.', 'volunteer-hours' ) );
 		}
 		$entry = self::get_entry( $id );
 		if ( ! $entry ) {
-			return new WP_Error( 'vh_missing', __( 'Entry not found.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_missing', __( 'Entry not found.', 'volunteer-hours' ) );
 		}
 
 		if ( 'paid' === $field && $value && ! (int) $entry->reviewed ) {
-			return new WP_Error( 'vh_order', __( 'Hours must be reviewed before they can be marked as paid.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_order', __( 'Hours must be reviewed before they can be marked as paid.', 'volunteer-hours' ) );
 		}
 
 		$data = array( $field => $value );
 		if ( 'reviewed' === $field && ! $value ) {
 			$data['paid'] = 0; // Un-reviewing clears paid.
 		}
-		$wpdb->update( $wpdb->prefix . 'vh_entries', $data, array( 'id' => $id ), array( '%d', '%d' ), array( '%d' ) );
+		$wpdb->update( $wpdb->prefix . 'vh_entries', $data, array( 'id' => $id ), array( '%d', '%d' ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 		return true;
 	}
 
@@ -204,19 +204,19 @@ class VH_Data {
 	 */
 	public static function status_label( $entry ) {
 		if ( (int) $entry->paid ) {
-			return __( 'Paid', 'wp-volunteer-hours' );
+			return __( 'Paid', 'volunteer-hours' );
 		}
 		if ( (int) $entry->reviewed ) {
-			return __( 'Reviewed', 'wp-volunteer-hours' );
+			return __( 'Reviewed', 'volunteer-hours' );
 		}
-		return __( 'Pending', 'wp-volunteer-hours' );
+		return __( 'Pending', 'volunteer-hours' );
 	}
 
 	public static function get_entry( $id ) {
 		global $wpdb;
-		$entry = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}vh_entries WHERE id = %d", (int) $id ) );
+		$entry = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}vh_entries WHERE id = %d", (int) $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 		if ( $entry ) {
-			$entry->project_ids = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT project_id FROM {$wpdb->prefix}vh_entry_projects WHERE entry_id = %d", (int) $id ) ) );
+			$entry->project_ids = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT project_id FROM {$wpdb->prefix}vh_entry_projects WHERE entry_id = %d", (int) $id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 		}
 		return $entry;
 	}
@@ -224,8 +224,8 @@ class VH_Data {
 	public static function delete_entry( $id ) {
 		global $wpdb;
 		$id = (int) $id;
-		$wpdb->delete( $wpdb->prefix . 'vh_entry_projects', array( 'entry_id' => $id ), array( '%d' ) );
-		$wpdb->delete( $wpdb->prefix . 'vh_entries', array( 'id' => $id ), array( '%d' ) );
+		$wpdb->delete( $wpdb->prefix . 'vh_entry_projects', array( 'entry_id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
+		$wpdb->delete( $wpdb->prefix . 'vh_entries', array( 'id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 		return true;
 	}
 
@@ -301,7 +301,7 @@ class VH_Data {
 			$from,
 			$to
 		);
-		$results = $wpdb->get_results( $sql );
+		$results = $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $sql is built with $wpdb->prepare() directly above; results are cached on the next line.
 		wp_cache_set( $cache_key, $results, 'vh_reports', HOUR_IN_SECONDS );
 		return $results;
 	}
@@ -319,16 +319,16 @@ class VH_Data {
 		$p = $wpdb->prefix;
 		$sql = $wpdb->prepare(
 			"SELECT pr.id, pr.name, SUM(e.hours) AS total_hours, COUNT(e.id) AS entry_count
-				FROM {$p}vh_projects pr
-				INNER JOIN {$p}vh_entry_projects ep ON ep.project_id = pr.id
-				INNER JOIN {$p}vh_entries e ON e.id = ep.entry_id
+				FROM {$p}vh_projects pr // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
+				INNER JOIN {$p}vh_entry_projects ep ON ep.project_id = pr.id // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
+				INNER JOIN {$p}vh_entries e ON e.id = ep.entry_id // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
 				WHERE e.work_date >= %s AND e.work_date <= %s
 				GROUP BY pr.id, pr.name
 				ORDER BY total_hours DESC",
 			$from,
 			$to
 		);
-		$results = $wpdb->get_results( $sql );
+		$results = $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $sql is built with $wpdb->prepare() directly above; results are cached on the next line.
 		wp_cache_set( $cache_key, $results, 'vh_reports', HOUR_IN_SECONDS );
 		return $results;
 	}
@@ -342,6 +342,6 @@ class VH_Data {
 			return $user->display_name;
 		}
 		/* translators: %d: numeric user id of a deleted account */
-		return sprintf( __( 'Deleted user #%d', 'wp-volunteer-hours' ), (int) $user_id );
+		return sprintf( __( 'Deleted user #%d', 'volunteer-hours' ), (int) $user_id );
 	}
 }
