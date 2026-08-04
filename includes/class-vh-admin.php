@@ -254,7 +254,7 @@ class VH_Admin {
 					<?php esc_html_e( 'Volunteer Hours is built and maintained by Living Islands, a small nonprofit working to preserve and share Pacific Island culture. The plugin is free, and it stays that way because of people who chip in.', 'volunteer-hours' ); ?>
 				</p>
 				<p>
-					<?php esc_html_e( 'If it saves you time each month, a donation of any size helps us keep improving it — and funds the community programs your volunteers are logging hours for.', 'volunteer-hours' ); ?>
+					<?php esc_html_e( 'If it saves you time each month, a donation of any size helps us keep improving it, and funds the community programs our volunteers are logging hours for.', 'volunteer-hours' ); ?>
 				</p>
 				<p class="vh-donate-actions">
 					<a class="button button-primary" href="<?php echo esc_url( self::donation_url() ); ?>" target="_blank" rel="noopener noreferrer">

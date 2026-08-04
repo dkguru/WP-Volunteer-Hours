@@ -3,13 +3,14 @@
 Contributors: livingislands
 Tags: volunteers, hours, time tracking, reports, nonprofit
 Requires at least: 5.8
-Tested up to: 6.8
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 1.1.17
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Let (logged-in) volunteers register their hours against organization projects, correct their own entries, and give admins per-user and per-project CSV reports.
+Volunteers log hours against your projects and fix their own entries; admins get per-user and per-project reports with CSV export.
+
 
 == Description ==
 
@@ -19,8 +20,7 @@ Volunteer Hours is a deliberately plain, standalone plugin for organizations tha
 
 * Maintain the project list separately — just project names; deactivate a project to hide it from the form without losing history
 * See, filter, correct, and export every entry
-* Two checkboxes per entry: **Reviewed/Approved** and **Paid**. Hours can only be marked paid after they have been reviewed;
-  un-reviewing clears the paid flag. Volunteers see the status of each entry, and paid entries are locked against volunteer changes
+* Two checkboxes per entry: **Reviewed/Approved** and **Paid**. Hours can only be marked paid after they have been reviewed; un-reviewing clears the paid flag. Volunteers see the status of each entry, and paid entries are locked against volunteer changes
 * Run reports for any date range: hours per user and hours per project, each with one-click CSV export (opens directly in Excel)
 
 **For volunteers** (via the `[volunteer_hours]` shortcode on any page):
@@ -30,9 +30,8 @@ Volunteer Hours is a deliberately plain, standalone plugin for organizations tha
 * See their own registered hours per month with a total, and edit or delete entries to fix mistakes
 * Download their monthly sheet as CSV, or print it (the browser print dialog saves it as PDF)
 
-No page builders, no styling frameworks, no external services.
-Three custom database tables, standard WordPress security (nonces, capability checks, prepared statements),
-and CSV output with Excel formula-injection protection.
+No page builders, no styling frameworks, no external services. Three custom database tables, standard WordPress security (nonces, capability checks, prepared statements), and CSV output with Excel formula-injection protection.
+
 
 == Installation ==
 
@@ -40,6 +39,11 @@ and CSV output with Excel formula-injection protection.
 2. Go to Volunteer Hours > Projects and add your current projects.
 3. Create a page for volunteers and put the shortcode `[volunteer_hours]` in it.
 4. Ensure volunteers have accounts on the site (any role — Subscriber is enough).
+
+The plugin is available for download at https://wordpress.org/plugins/volunteer-hours/ (Pending approval).
+It is also available on GitHub at https://github.com/dkguru/WP-Volunteer-Hours.
+The GitHub repository is my development fork; the WordPress.org plugin is the official release.
+
 
 == Frequently Asked Questions ==
 
@@ -54,6 +58,23 @@ where every modern browser offers Save as PDF. CSV export is always available.
 = What happens if I delete a project? =
 Projects with registered hours cannot be deleted, only deactivated, so history is never lost.
 
+= What happens if I uninstall the plugin? =
+All data and settings will be removed from the WordPress site.
+There is now a backup and restore feature, so you can export your data before uninstalling and restore it later if needed.
+
+= Author says livingislands, but I don't see any contact info. How do I get support? =
+The plugin is maintained by me on behalf of my wife's non-profit Living Islands.
+Living Islands will not be able to provide support for the plugin, but I will answer questions and fix bugs as time allows.
+The best way to reach me is via the WordPress.org support forum (https://wordpress.org/support/plugin/volunteer-hours/) for the plugin,
+or by opening an issue on the GitHub repository (https://github.com/dkguru/WP-Volunteer-Hours/issues).
+
+= Who is Living Islands anyways? =
+The plugin is maintained by me on behalf of Living Islands, my wife's small nonprofit working to preserve and share Pacific Island culture.
+The plugin is free, and it will stay that way.
+If it saves you time each month, or makes your life easier in any way, a donation of any size helps us keep improving it, and also funds the community programs our volunteers are logging hours for.
+If you feel like supporting the work behind this plugin, please donate at https://donorbox.org/linp.
+
+
 == Screenshots ==
 
 1. The volunteer form: date, hours, multi-select projects, description.
@@ -61,6 +82,11 @@ Projects with registered hours cannot be deleted, only deactivated, so history i
 3. Admin reports: hours per user and hours per project with CSV export.
 
 == Changelog ==
+
+= 1.1.18 =
+* Chore: Add 1.1.18 changelog entry to README.md noting documentation bump in readme.txt.
+* Docs: No functional changes; this is a metadata/documentation update.
+* Docs: Updated readme files with the plugin homepage (https://wordpress.org/plugins/volunteer-hours/) and repository (https://github.com/dkguru/WP-Volunteer-Hours).
 
 = 1.1.17 =
 * Fixed: Broken CSV exports and stale report caches
