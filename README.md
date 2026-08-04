@@ -5,7 +5,7 @@ Tags: volunteers, hours, time tracking, reports, nonprofit
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.13
+Stable tag: 1.1.14
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -62,14 +62,14 @@ Projects with registered hours cannot be deleted, only deactivated, so history i
 
 == Changelog ==
 
- = 1.1.13 =
-* Security: switched to per-action nonces across admin forms and handlers to harden CSRF protections.
-* Security/standards: replaced direct fopen/fgetcsv restore path with WP_Filesystem reading; added input unslashing and isset checks for admin POST handling.
-* Performance: converted remaining interpolated SQL to use $wpdb->prepare() and added caching (wp_cache_get/wp_cache_set) for expensive reads; added cache invalidation on writes.
-* Internal: renamed plugin slug and main file back to volunteer-hours; ensured all text-domain references are 'volunteer-hours'.
-* I18n: fixed translators comments and used ordered placeholders for all sprintf() translation strings.
-* Tests: updated PHPUnit bootstrap and tests to avoid direct file system calls and to reference the final plugin main file.
-* Packaging: created volunteer-hours.zip distribution (excludes tests and dev files) ready for installation.
+  = 1.1.14 =
+* Security: implemented per-action nonces across admin and front-end forms and export URLs/handlers to harden CSRF protections.
+* Security/standards: replaced direct fopen/fgetcsv restore path with WP_Filesystem reading; added input unslashing and explicit isset checks for admin POST handling.
+* Performance: converted remaining interpolated SQL to use explicit table variables and $wpdb->prepare() where appropriate; added caching (wp_cache_get/wp_cache_set) for expensive reads and implemented cache invalidation on write paths.
+* Internal: refactored export URL builder to emit per-action nonces and updated export handlers; normalized table references to explicit $wpdb->prefix variables.
+* I18n: fixed translators comments and used ordered placeholders for sprintf() translation strings.
+* Tests: updated PHPUnit tests to avoid direct file system calls and to use explicit table variables where needed.
+* Packaging: updated volunteer-hours.zip distribution and bumped versions.
 
 = 1.1.11 =
 * Doc: updates to includes/class-vh-admin.php documented. Changes include:

@@ -65,7 +65,11 @@ class VH_Export {
 	private static function build_export_url( $action, $params = array() ) {
 		$params = (array) $params;
 		$params['action'] = $action;
-		return wp_nonce_url( add_query_arg( $params, admin_url( 'admin-post.php' ) ), 'vh_export_admin', 'vh_nonce' );
+		// Use per-action export nonces to harden CSRF protections on exported URLs.
+		$nonce_action = 'vh_export_' . $action;
+		$nonce_field  = 'vh_nonce_' . $action;
+		$url = add_query_arg( $params, admin_url( 'admin-post.php' ) );
+		return wp_nonce_url( $url, $nonce_action, $nonce_field );
 	}
 
 	/**
@@ -75,7 +79,11 @@ class VH_Export {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Insufficient permissions.', 'volunteer-hours' ) );
 		}
-		check_admin_referer( 'vh_export_admin', 'vh_nonce' );
+		$nonce_field = 'vh_nonce_vh_export_unpaid';
+		$nonce_action = 'vh_export_vh_export_unpaid';
+		if ( ! isset( $_GET[ $nonce_field ] ) || ! wp_verify_nonce( wp_unslash( $_GET[ $nonce_field ] ), $nonce_action ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'volunteer-hours' ) );
+		}
 
 		$from = isset( $_GET['vh_from'] ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', wp_unslash( $_GET['vh_from'] ) ) ? sanitize_text_field( wp_unslash( $_GET['vh_from'] ) ) : wp_date( 'Y-m-01' ); // phpcs:ignore
 		$to   = isset( $_GET['vh_to'] ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', wp_unslash( $_GET['vh_to'] ) ) ? sanitize_text_field( wp_unslash( $_GET['vh_to'] ) ) : wp_date( 'Y-m-t' ); // phpcs:ignore
@@ -127,13 +135,18 @@ class VH_Export {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Insufficient permissions.', 'volunteer-hours' ) );
 		}
-		check_admin_referer( 'vh_export_admin', 'vh_nonce' );
+		$nonce_field = 'vh_nonce_vh_export_backup';
+		$nonce_action = 'vh_export_vh_export_backup';
+		if ( ! isset( $_GET[ $nonce_field ] ) || ! wp_verify_nonce( wp_unslash( $_GET[ $nonce_field ] ), $nonce_action ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'volunteer-hours' ) );
+		}
 
 		global $wpdb;
 		$p = $wpdb->prefix;
 
 		// Projects first
-		$projects = $wpdb->get_results( "SELECT id, name, active, created_at FROM {$p}vh_projects ORDER BY id ASC" ); // phpcs:ignore
+		$projects_table = $p . 'vh_projects';
+		$projects = $wpdb->get_results( $wpdb->prepare( "SELECT id, name, active, created_at FROM {$projects_table} ORDER BY id ASC" ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name from prefix is trusted
 		$rows = array();
 		$rows[] = array( 'type', 'id', 'name', 'active', 'created_at' );
 		foreach ( $projects as $pr ) {
@@ -141,7 +154,8 @@ class VH_Export {
 		}
 
 		// Entries next; include project ids as comma-separated old ids
-		$entries = $wpdb->get_results( "SELECT * FROM {$p}vh_entries ORDER BY id ASC" ); // phpcs:ignore
+		$entries_table = $p . 'vh_entries';
+		$entries = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$entries_table} ORDER BY id ASC" ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name from prefix is trusted
 		$rows[] = array( 'type', 'id', 'user_id', 'work_date', 'hours', 'description', 'reviewed', 'paid', 'created_at', 'updated_at', 'project_ids' );
 		foreach ( $entries as $e ) {
 			$proj_ids = $wpdb->get_col( $wpdb->prepare( "SELECT project_id FROM {$p}vh_entry_projects WHERE entry_id = %d ORDER BY project_id ASC", (int) $e->id ) ); // phpcs:ignore
@@ -160,7 +174,11 @@ class VH_Export {
 		if ( ! is_user_logged_in() ) {
 			wp_die( esc_html__( 'Please log in.', 'volunteer-hours' ) );
 		}
-		check_admin_referer( 'vh_export_my', 'vh_nonce' );
+		$nonce_field = 'vh_nonce_vh_export_my_hours';
+		$nonce_action = 'vh_export_vh_export_my_hours';
+		if ( ! isset( $_GET[ $nonce_field ] ) || ! wp_verify_nonce( wp_unslash( $_GET[ $nonce_field ] ), $nonce_action ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'volunteer-hours' ) );
+		}
 
 		$month = isset( $_GET['vh_month'] ) && preg_match( '/^\d{4}-\d{2}$/', wp_unslash( $_GET['vh_month'] ) ) ? sanitize_text_field( wp_unslash( $_GET['vh_month'] ) ) : wp_date( 'Y-m' ); // phpcs:ignore
 		$from  = $month . '-01';

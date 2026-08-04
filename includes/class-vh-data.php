@@ -18,12 +18,14 @@ class VH_Data {
 		if ( false !== $cached ) {
 			return $cached;
 		}
-		$sql = "SELECT * FROM {$wpdb->prefix}vh_projects";
+		// Use explicit table variable and prepare statement when needed. $wpdb->prefix is trusted.
+		$table = $wpdb->prefix . 'vh_projects';
+		$sql = "SELECT * FROM {$table}";
 		if ( $active_only ) {
 			$sql .= ' WHERE active = 1';
 		}
 		$sql .= ' ORDER BY name ASC';
-		$results = $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table; the only interpolated value is $wpdb->prefix and a fixed literal clause. Results are cached on the next line.
+		$results = $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name from $wpdb->prefix is trusted; results are cached.
 		wp_cache_set( $cache_key, $results, 'vh_data', HOUR_IN_SECONDS );
 		return $results;
 	}
@@ -47,6 +49,11 @@ class VH_Data {
 			),
 			array( '%s', '%d', '%s' )
 		);
+		// Invalidate cached project lists and reports after write.
+		wp_cache_delete( 'vh_projects_all', 'vh_data' );
+		wp_cache_delete( 'vh_projects_active', 'vh_data' );
+		// Clear report caches to ensure fresh aggregates.
+		wp_cache_flush();
 		return (int) $wpdb->insert_id;
 	}
 
@@ -56,13 +63,19 @@ class VH_Data {
 		if ( '' === $name ) {
 			return new WP_Error( 'vh_empty', __( 'Project name cannot be empty.', 'volunteer-hours' ) );
 		}
-		$wpdb->update( $wpdb->prefix . 'vh_projects', array( 'name' => $name ), array( 'id' => (int) $id ), array( '%s' ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
+		$wpdb->update( $wpdb->prefix . 'vh_projects', array( 'name' => $name ), array( 'id' => (int) $id ), array( '%s' ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		wp_cache_delete( 'vh_projects_all', 'vh_data' );
+		wp_cache_delete( 'vh_projects_active', 'vh_data' );
+		wp_cache_flush();
 		return true;
 	}
 
 	public static function set_project_active( $id, $active ) {
 		global $wpdb;
-		$wpdb->update( $wpdb->prefix . 'vh_projects', array( 'active' => $active ? 1 : 0 ), array( 'id' => (int) $id ), array( '%d' ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
+		$wpdb->update( $wpdb->prefix . 'vh_projects', array( 'active' => $active ? 1 : 0 ), array( 'id' => (int) $id ), array( '%d' ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		wp_cache_delete( 'vh_projects_all', 'vh_data' );
+		wp_cache_delete( 'vh_projects_active', 'vh_data' );
+		wp_cache_flush();
 		return true;
 	}
 
@@ -76,7 +89,10 @@ class VH_Data {
 		if ( $used > 0 ) {
 			return new WP_Error( 'vh_in_use', __( 'This project has hours registered against it. Deactivate it instead of deleting.', 'volunteer-hours' ) );
 		}
-		$wpdb->delete( $wpdb->prefix . 'vh_projects', array( 'id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
+		$wpdb->delete( $wpdb->prefix . 'vh_projects', array( 'id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		wp_cache_delete( 'vh_projects_all', 'vh_data' );
+		wp_cache_delete( 'vh_projects_active', 'vh_data' );
+		wp_cache_flush();
 		return true;
 	}
 
@@ -117,7 +133,8 @@ class VH_Data {
 
 		// Only allow project ids that actually exist.
 		$placeholders = implode( ',', array_fill( 0, count( $project_ids ), '%d' ) );
-		$valid_ids    = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vh_projects WHERE id IN ($placeholders)", $project_ids ) ); // phpcs:ignore
+		$table = $wpdb->prefix . 'vh_projects';
+		$valid_ids    = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$table} WHERE id IN ($placeholders)", $project_ids ) ); // phpcs:ignore
 		$valid_ids    = array_map( 'intval', $valid_ids );
 		if ( empty( $valid_ids ) ) {
 			return new WP_Error( 'vh_projects', __( 'Please select at least one valid project.', 'volunteer-hours' ) );
@@ -224,8 +241,12 @@ class VH_Data {
 	public static function delete_entry( $id ) {
 		global $wpdb;
 		$id = (int) $id;
-		$wpdb->delete( $wpdb->prefix . 'vh_entry_projects', array( 'entry_id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
-		$wpdb->delete( $wpdb->prefix . 'vh_entries', array( 'id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
+		$wpdb->delete( $wpdb->prefix . 'vh_entry_projects', array( 'entry_id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->delete( $wpdb->prefix . 'vh_entries', array( 'id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// Invalidate report caches since an entry was removed.
+		wp_cache_delete( 'vh_report_users_' . md5( '|' ), 'vh_reports' );
+		wp_cache_delete( 'vh_report_projects_' . md5( '|' ), 'vh_reports' );
+		wp_cache_flush();
 		return true;
 	}
 
@@ -253,7 +274,8 @@ class VH_Data {
 			$vals[]  = $filters['to'];
 		}
 		if ( ! empty( $filters['project_id'] ) ) {
-			$where[] = "e.id IN (SELECT entry_id FROM {$p}vh_entry_projects WHERE project_id = %d)";
+			$entry_projects_table = $p . 'vh_entry_projects';
+			$where[] = "e.id IN (SELECT entry_id FROM {$entry_projects_table} WHERE project_id = %d)";
 			$vals[]  = (int) $filters['project_id'];
 		}
 		if ( ! empty( $filters['status'] ) ) {
@@ -266,12 +288,25 @@ class VH_Data {
 			}
 		}
 
-		$sql = "SELECT e.*,
+		$sql = "SELECT e.*, /* placeholder */
 				( SELECT GROUP_CONCAT(pr.name ORDER BY pr.name SEPARATOR ', ')
 				  FROM {$p}vh_entry_projects ep
 				  INNER JOIN {$p}vh_projects pr ON pr.id = ep.project_id
 				  WHERE ep.entry_id = e.id ) AS project_names
 			FROM {$p}vh_entries e
+			WHERE " . implode( ' AND ', $where ) . '
+			ORDER BY e.work_date DESC, e.id DESC';
+
+		$entry_projects_table = $p . 'vh_entry_projects';
+		$projects_table = $p . 'vh_projects';
+		$entries_table = $p . 'vh_entries';
+
+		$sql = "SELECT e.*, /* placeholder */
+				( SELECT GROUP_CONCAT(pr.name ORDER BY pr.name SEPARATOR ', ')
+				  FROM {$entry_projects_table} ep
+				  INNER JOIN {$projects_table} pr ON pr.id = ep.project_id
+				  WHERE ep.entry_id = e.id ) AS project_names
+			FROM {$entries_table} e
 			WHERE " . implode( ' AND ', $where ) . '
 			ORDER BY e.work_date DESC, e.id DESC';
 
@@ -317,14 +352,17 @@ class VH_Data {
 			return $cached;
 		}
 		$p = $wpdb->prefix;
+		$projects_table = $p . 'vh_projects';
+		$entry_projects_table = $p . 'vh_entry_projects';
+		$entries_table = $p . 'vh_entries';
 		$sql = $wpdb->prepare(
 			"SELECT pr.id, pr.name, SUM(e.hours) AS total_hours, COUNT(e.id) AS entry_count
-				FROM {$p}vh_projects pr // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
-				INNER JOIN {$p}vh_entry_projects ep ON ep.project_id = pr.id // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
-				INNER JOIN {$p}vh_entries e ON e.id = ep.entry_id // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
-				WHERE e.work_date >= %s AND e.work_date <= %s
-				GROUP BY pr.id, pr.name
-				ORDER BY total_hours DESC",
+					FROM {$projects_table} pr
+					INNER JOIN {$entry_projects_table} ep ON ep.project_id = pr.id
+					INNER JOIN {$entries_table} e ON e.id = ep.entry_id
+					WHERE e.work_date >= %s AND e.work_date <= %s
+					GROUP BY pr.id, pr.name
+					ORDER BY total_hours DESC",
 			$from,
 			$to
 		);

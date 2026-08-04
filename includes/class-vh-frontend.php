@@ -22,7 +22,10 @@ class VH_Frontend {
 		if ( ! is_user_logged_in() || empty( $_POST['vh_action'] ) ) {
 			return;
 		}
-		if ( ! isset( $_POST['vh_nonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['vh_nonce'] ), 'vh_front' ) ) {
+		$action = sanitize_key( $_POST['vh_action'] );
+		$nonce_field = 'vh_nonce_' . $action;
+		$nonce_action = 'vh_front_' . $action;
+		if ( ! isset( $_POST[ $nonce_field ] ) || ! wp_verify_nonce( wp_unslash( $_POST[ $nonce_field ] ), $nonce_action ) ) {
 			wp_die( esc_html__( 'Security check failed. Please go back and try again.', 'volunteer-hours' ) );
 		}
 
@@ -182,7 +185,10 @@ class VH_Frontend {
 		endif;
 		?>
 		<form method="post" class="vh-form">
-			<?php wp_nonce_field( 'vh_front', 'vh_nonce' ); ?>
+			<?php wp_nonce_field( 'vh_front_save', 'vh_nonce_save' ); ?>
+			<?php if ( $is_edit ) : ?>
+				<?php wp_nonce_field( 'vh_front_delete', 'vh_nonce_delete' ); ?>
+			<?php endif; ?>
 			<input type="hidden" name="vh_action" value="save" />
 			<input type="hidden" name="vh_entry_id" value="<?php echo esc_attr( $is_edit ? $edit->id : 0 ); ?>" />
 

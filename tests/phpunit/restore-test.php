@@ -54,11 +54,13 @@ class VH_Restore_Test extends WP_UnitTestCase {
 		$this->assertEquals( 1, $res['entries'] );
 
 		// Verify project exists with id 123
-		$proj = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$p}vh_projects WHERE id = %d", 123 ) ); // phpcs:ignore
+		$projects_table = $p . 'vh_projects';
+		$proj = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$projects_table} WHERE id = %d", 123 ) ); // phpcs:ignore
 		$this->assertNotEmpty( $proj );
 
 		// Verify entry exists with id 456
-		$entry = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$p}vh_entries WHERE id = %d", 456 ) ); // phpcs:ignore
+		$entries_table = $p . 'vh_entries';
+		$entry = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$entries_table} WHERE id = %d", 456 ) ); // phpcs:ignore
 		$this->assertNotEmpty( $entry );
 	}
 }

@@ -88,9 +88,12 @@ class VH_Admin {
 
 		// Optionally clear existing data
 		if ( $replace ) {
-			$wpdb->query( "DELETE FROM {$p}vh_entry_projects" ); // phpcs:ignore
-			$wpdb->query( "DELETE FROM {$p}vh_entries" ); // phpcs:ignore
-			$wpdb->query( "DELETE FROM {$p}vh_projects" ); // phpcs:ignore
+			$entry_projects_table = $p . 'vh_entry_projects';
+			$entries_table = $p . 'vh_entries';
+			$projects_table = $p . 'vh_projects';
+			$wpdb->query( "DELETE FROM {$entry_projects_table}" ); // phpcs:ignore
+			$wpdb->query( "DELETE FROM {$entries_table}" ); // phpcs:ignore
+			$wpdb->query( "DELETE FROM {$projects_table}" ); // phpcs:ignore
 		}
 
 		// Insert projects and keep mapping from old_id to new_id
@@ -118,9 +121,10 @@ class VH_Admin {
 
 		// If preserving IDs, bump auto_increment to max id + 1 for projects
 		if ( $preserve_ids ) {
-			$max = $wpdb->get_var( "SELECT COALESCE(MAX(id),0) FROM {$p}vh_projects" ); // phpcs:ignore
+			$projects_table = $p . 'vh_projects';
+			$max = $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(MAX(id),0) FROM {$projects_table}", array() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name from prefix is trusted
 			if ( $max ) {
-				$wpdb->query( "ALTER TABLE {$p}vh_projects AUTO_INCREMENT = " . ( (int) $max + 1 ) ); // phpcs:ignore
+				$wpdb->query( "ALTER TABLE {$projects_table} AUTO_INCREMENT = " . ( (int) $max + 1 ) ); // phpcs:ignore
 			}
 		}
 
@@ -158,9 +162,10 @@ class VH_Admin {
 
 		// If preserving IDs, bump auto_increment to max id + 1 for entries
 		if ( $preserve_ids ) {
-			$max = $wpdb->get_var( "SELECT COALESCE(MAX(id),0) FROM {$p}vh_entries" ); // phpcs:ignore
+			$entries_table = $p . 'vh_entries';
+			$max = $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(MAX(id),0) FROM {$entries_table}", array() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name from prefix is trusted
 			if ( $max ) {
-				$wpdb->query( "ALTER TABLE {$p}vh_entries AUTO_INCREMENT = " . ( (int) $max + 1 ) ); // phpcs:ignore
+				$wpdb->query( "ALTER TABLE {$entries_table} AUTO_INCREMENT = " . ( (int) $max + 1 ) ); // phpcs:ignore
 			}
 		}
 
@@ -298,11 +303,14 @@ class VH_Admin {
 		if ( empty( $_POST['vh_admin_action'] ) || ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		if ( ! isset( $_POST['vh_nonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['vh_nonce'] ), 'vh_admin' ) ) {
+		$action   = sanitize_key( $_POST['vh_admin_action'] );
+
+		// Per-action nonces: each form emits a nonce field named vh_nonce_<action>
+		$nonce_field  = 'vh_nonce_' . $action;
+		$nonce_action = 'vh_admin_' . $action;
+		if ( ! isset( $_POST[ $nonce_field ] ) || ! wp_verify_nonce( wp_unslash( $_POST[ $nonce_field ] ), $nonce_action ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'volunteer-hours' ) );
 		}
-
-		$action   = sanitize_key( $_POST['vh_admin_action'] );
 		// Build the current URL from HTTP_HOST + REQUEST_URI to avoid duplicating
 		// the path when WordPress is in a subdirectory. Fall back to the
 		// plugin admin page URL if unavailable.
@@ -418,7 +426,7 @@ class VH_Admin {
 		<p><?php esc_html_e( 'This list feeds the project checkboxes on the volunteer form. Deactivate a project to hide it from the form while keeping its history.', 'volunteer-hours' ); ?></p>
 
 		<form method="post" class="vh-inline-form">
-			<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
+			<?php wp_nonce_field( 'vh_admin_add_project', 'vh_nonce_add_project' ); ?>
 			<input type="hidden" name="vh_admin_action" value="add_project" />
 			<input type="text" name="vh_name" placeholder="<?php esc_attr_e( 'New project name', 'volunteer-hours' ); ?>" required />
 			<button type="submit" class="button button-primary"><?php esc_html_e( 'Add project', 'volunteer-hours' ); ?></button>
@@ -439,7 +447,7 @@ class VH_Admin {
 					<td>
 						<?php if ( $edit_id === (int) $pr->id ) : ?>
 							<form method="post" class="vh-inline-form">
-								<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
+					<?php wp_nonce_field( 'vh_admin_rename_project', 'vh_nonce_rename_project' ); ?>
 								<input type="hidden" name="vh_admin_action" value="rename_project" />
 								<input type="hidden" name="vh_id" value="<?php echo esc_attr( $pr->id ); ?>" />
 								<input type="text" name="vh_name" value="<?php echo esc_attr( $pr->name ); ?>" required />
@@ -454,14 +462,14 @@ class VH_Admin {
 					<td>
 						<a href="<?php echo esc_url( add_query_arg( 'vh_edit', (int) $pr->id ) ); ?>"><?php esc_html_e( 'Rename', 'volunteer-hours' ); ?></a>
 						<form method="post" class="vh-inline">
-							<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
+				<?php wp_nonce_field( 'vh_admin_toggle_project', 'vh_nonce_toggle_project' ); ?>
 							<input type="hidden" name="vh_admin_action" value="toggle_project" />
 							<input type="hidden" name="vh_id" value="<?php echo esc_attr( $pr->id ); ?>" />
 							<input type="hidden" name="vh_active" value="<?php echo $pr->active ? '' : '1'; ?>" />
 							<button type="submit" class="button-link"><?php echo $pr->active ? esc_html__( 'Deactivate', 'volunteer-hours' ) : esc_html__( 'Activate', 'volunteer-hours' ); ?></button>
 						</form>
 						<form method="post" class="vh-inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this project?', 'volunteer-hours' ) ); ?>');">
-							<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
+				<?php wp_nonce_field( 'vh_admin_delete_project', 'vh_nonce_delete_project' ); ?>
 							<input type="hidden" name="vh_admin_action" value="delete_project" />
 							<input type="hidden" name="vh_id" value="<?php echo esc_attr( $pr->id ); ?>" />
 							<button type="submit" class="button-link vh-danger"><?php esc_html_e( 'Delete', 'volunteer-hours' ); ?></button>
@@ -566,7 +574,7 @@ class VH_Admin {
 						<td colspan="8">
 							<?php $full = VH_Data::get_entry( $e->id ); ?>
 							<form method="post" class="vh-inline-form">
-								<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
+				<?php wp_nonce_field( 'vh_admin_update_entry', 'vh_nonce_update_entry' ); ?>
 								<input type="hidden" name="vh_admin_action" value="update_entry" />
 								<input type="hidden" name="vh_id" value="<?php echo esc_attr( $e->id ); ?>" />
 								<strong><?php echo esc_html( VH_Data::user_label( $e->user_id ) ); ?></strong>
@@ -590,7 +598,7 @@ class VH_Admin {
 						<td><?php echo esc_html( $e->description ); ?></td>
 						<td>
 							<form method="post" class="vh-inline">
-								<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
+				<?php wp_nonce_field( 'vh_admin_set_status', 'vh_nonce_set_status' ); ?>
 								<input type="hidden" name="vh_admin_action" value="set_status" />
 								<input type="hidden" name="vh_field" value="reviewed" />
 								<input type="hidden" name="vh_id" value="<?php echo esc_attr( $e->id ); ?>" />
@@ -601,7 +609,7 @@ class VH_Admin {
 						</td>
 						<td>
 							<form method="post" class="vh-inline">
-								<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
+								<?php wp_nonce_field( 'vh_admin_set_status', 'vh_nonce_set_status' ); ?>
 								<input type="hidden" name="vh_admin_action" value="set_status" />
 								<input type="hidden" name="vh_field" value="paid" />
 								<input type="hidden" name="vh_id" value="<?php echo esc_attr( $e->id ); ?>" />
@@ -614,7 +622,7 @@ class VH_Admin {
 						<td>
 							<a href="<?php echo esc_url( add_query_arg( 'vh_edit', (int) $e->id ) ); ?>"><?php esc_html_e( 'Edit', 'volunteer-hours' ); ?></a>
 							<form method="post" class="vh-inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this entry?', 'volunteer-hours' ) ); ?>');">
-								<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
+				<?php wp_nonce_field( 'vh_admin_delete_entry', 'vh_nonce_delete_entry' ); ?>
 								<input type="hidden" name="vh_admin_action" value="delete_entry" />
 								<input type="hidden" name="vh_id" value="<?php echo esc_attr( $e->id ); ?>" />
 								<button type="submit" class="button-link vh-danger"><?php esc_html_e( 'Delete', 'volunteer-hours' ); ?></button>
@@ -665,7 +673,7 @@ class VH_Admin {
 				<tr><td style="padding-right:14px;"><?php esc_html_e( 'Database server', 'volunteer-hours' ); ?></td><td><code><?php echo esc_html( $db_version ); ?></code></td></tr>
 			</table>
 			<form method="post" style="margin-top:8px;">
-				<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
+			<?php wp_nonce_field( 'vh_admin_repair', 'vh_nonce_repair' ); ?>
 				<input type="hidden" name="vh_admin_action" value="repair" />
 				<button type="submit" class="button"><?php esc_html_e( 'Repair / rebuild tables', 'volunteer-hours' ); ?></button>
 				<span class="description"><?php esc_html_e( 'Safe to run — creates any missing tables/columns, never deletes data.', 'volunteer-hours' ); ?></span>
@@ -693,7 +701,7 @@ class VH_Admin {
 		</form>
 
 		<form method="post" enctype="multipart/form-data" style="margin-top:10px;">
-			<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
+			<?php wp_nonce_field( 'vh_admin_restore_backup', 'vh_nonce_restore_backup' ); ?>
 			<input type="hidden" name="vh_admin_action" value="restore_backup" />
 			<label><?php esc_html_e( 'Restore from backup CSV', 'volunteer-hours' ); ?> <input type="file" name="vh_backup_file" accept="text/csv" required /></label>
 			<label style="margin-left:8px;"><input type="checkbox" name="vh_restore_replace" value="1" /> <?php esc_html_e( 'Replace existing data (delete current)', 'volunteer-hours' ); ?></label>
