@@ -28,10 +28,16 @@ class VH_Frontend {
 
 		$user_id  = get_current_user_id();
 		$action   = sanitize_key( $_POST['vh_action'] );
-		// Rebuild the current page URL: wp_get_referer() returns false when the
-		// referer equals the requested URL, which is always the case for a form
-		// posting back to its own page.
-		$current  = isset( $_SERVER['REQUEST_URI'] ) ? home_url( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : home_url(); // phpcs:ignore
+		// Rebuild the current page URL from the host + request URI.
+		// Using home_url( REQUEST_URI ) duplicates the path when WordPress
+		// is installed in a subdirectory (e.g. site at example.com/vh/), so
+		// construct the URL from the HTTP_HOST and REQUEST_URI instead.
+		if ( isset( $_SERVER['REQUEST_URI'] ) && isset( $_SERVER['HTTP_HOST'] ) ) { // phpcs:ignore
+			$scheme  = is_ssl() ? 'https://' : 'http://';
+			$current = $scheme . wp_unslash( $_SERVER['HTTP_HOST'] ) . wp_unslash( $_SERVER['REQUEST_URI'] ); // phpcs:ignore
+		} else {
+			$current = home_url();
+		}
 		$redirect = remove_query_arg( array( 'vh_edit', 'vh_msg' ), $current );
 
 		if ( 'save' === $action ) {

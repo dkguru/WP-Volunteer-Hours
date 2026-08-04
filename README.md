@@ -5,7 +5,7 @@ Tags: volunteers, hours, time tracking, reports, nonprofit
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.6
+Stable tag: 1.1.7
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -61,6 +61,10 @@ Projects with registered hours cannot be deleted, only deactivated, so history i
 3. Admin reports: hours per user and hours per project with CSV export.
 
 == Changelog ==
+
+
+= 1.1.7 =
+* Fixed: redirects built from the current URL could duplicate the site path when WordPress is installed in a subdirectory (e.g. example.com/vh/). Post-submit redirects now build the URL from HTTP_HOST + REQUEST_URI to avoid generating /vh/vh/?vh_msg=... URLs.
 
 = 1.1.6 =
 * Added: a dismissible message on the Volunteer Hours admin screens inviting support for Living Islands, linking to https://donorbox.org/linp

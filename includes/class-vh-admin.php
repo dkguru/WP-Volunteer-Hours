@@ -145,7 +145,15 @@ class VH_Admin {
 		}
 
 		$action   = sanitize_key( $_POST['vh_admin_action'] );
-		$current  = isset( $_SERVER['REQUEST_URI'] ) ? home_url( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : admin_url( 'admin.php?page=vh-projects' ); // phpcs:ignore
+		// Build the current URL from HTTP_HOST + REQUEST_URI to avoid duplicating
+		// the path when WordPress is in a subdirectory. Fall back to the
+		// plugin admin page URL if unavailable.
+		if ( isset( $_SERVER['REQUEST_URI'] ) && isset( $_SERVER['HTTP_HOST'] ) ) { // phpcs:ignore
+			$scheme  = is_ssl() ? 'https://' : 'http://';
+			$current = $scheme . wp_unslash( $_SERVER['HTTP_HOST'] ) . wp_unslash( $_SERVER['REQUEST_URI'] ); // phpcs:ignore
+		} else {
+			$current = admin_url( 'admin.php?page=vh-projects' );
+		}
 		$redirect = remove_query_arg( array( 'vh_msg', 'vh_edit' ), $current );
 		$msg      = '';
 
