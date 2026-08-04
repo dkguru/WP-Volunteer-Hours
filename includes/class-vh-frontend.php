@@ -23,7 +23,7 @@ class VH_Frontend {
 			return;
 		}
 		if ( ! isset( $_POST['vh_nonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['vh_nonce'] ), 'vh_front' ) ) {
-			wp_die( esc_html__( 'Security check failed. Please go back and try again.', 'wp-volunteer-hours' ) );
+			wp_die( esc_html__( 'Security check failed. Please go back and try again.', 'volunteer-hours' ) );
 		}
 
 		$user_id  = get_current_user_id();
@@ -116,7 +116,7 @@ class VH_Frontend {
 			return '<p>' . sprintf(
 			/* translators: %s: login link */
 			esc_html__( 'Please %s to register your volunteer hours.', 'wp-volunteer-hours' ),
-				'<a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">' . esc_html__( 'log in', 'wp-volunteer-hours' ) . '</a>'
+				'<a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">' . esc_html__( 'log in', 'volunteer-hours' ) . '</a>'
 			) . '</p>';
 		}
 
@@ -384,7 +384,7 @@ tfoot th { background: #eee; }
 	</tbody>
 	<tfoot>
 		<tr>
-			<th><?php esc_html_e( 'Total', 'volunteer-hours' ); ?></th>
+			<th><?php esc_html_e( 'Total', 'wp-volunteer-hours' ); ?></th>
 			<th><?php echo esc_html( self::fmt_hours( $total ) ); ?></th>
 			<th colspan="3"></th>
 		</tr>

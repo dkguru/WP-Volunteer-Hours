@@ -13,23 +13,30 @@ class VH_Data {
 
 	public static function get_projects( $active_only = false ) {
 		global $wpdb;
+		$cache_key = 'vh_projects_' . ( $active_only ? 'active' : 'all' );
+		$cached = wp_cache_get( $cache_key, 'vh_data' );
+		if ( false !== $cached ) {
+			return $cached;
+		}
 		$sql = "SELECT * FROM {$wpdb->prefix}vh_projects";
 		if ( $active_only ) {
 			$sql .= ' WHERE active = 1';
 		}
 		$sql .= ' ORDER BY name ASC';
-		return $wpdb->get_results( $sql );
+		$results = $wpdb->get_results( $sql );
+		wp_cache_set( $cache_key, $results, 'vh_data', HOUR_IN_SECONDS );
+		return $results;
 	}
 
 	public static function add_project( $name ) {
 		global $wpdb;
 		$name = trim( sanitize_text_field( $name ) );
 		if ( '' === $name ) {
-			return new WP_Error( 'vh_empty', __( 'Project name cannot be empty.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_empty', __( 'Project name cannot be empty.', 'volunteer-hours' ) );
 		}
 		$exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vh_projects WHERE name = %s", $name ) );
 		if ( $exists ) {
-			return new WP_Error( 'vh_dup', __( 'A project with that name already exists.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_dup', __( 'A project with that name already exists.', 'volunteer-hours' ) );
 		}
 		$wpdb->insert(
 			$wpdb->prefix . 'vh_projects',
@@ -47,7 +54,7 @@ class VH_Data {
 		global $wpdb;
 		$name = trim( sanitize_text_field( $name ) );
 		if ( '' === $name ) {
-			return new WP_Error( 'vh_empty', __( 'Project name cannot be empty.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_empty', __( 'Project name cannot be empty.', 'volunteer-hours' ) );
 		}
 		$wpdb->update( $wpdb->prefix . 'vh_projects', array( 'name' => $name ), array( 'id' => (int) $id ), array( '%s' ), array( '%d' ) );
 		return true;
@@ -67,7 +74,7 @@ class VH_Data {
 		$id   = (int) $id;
 		$used = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}vh_entry_projects WHERE project_id = %d", $id ) );
 		if ( $used > 0 ) {
-			return new WP_Error( 'vh_in_use', __( 'This project has hours registered against it. Deactivate it instead of deleting.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_in_use', __( 'This project has hours registered against it. Deactivate it instead of deleting.', 'volunteer-hours' ) );
 		}
 		$wpdb->delete( $wpdb->prefix . 'vh_projects', array( 'id' => $id ), array( '%d' ) );
 		return true;
@@ -93,19 +100,19 @@ class VH_Data {
 		// Date must be a real Y-m-d date and not more than one day in the future.
 		$dt = DateTime::createFromFormat( '!Y-m-d', $work_date, wp_timezone() );
 		if ( ! $dt || $dt->format( 'Y-m-d' ) !== $work_date ) {
-			return new WP_Error( 'vh_date', __( 'Please provide a valid date.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_date', __( 'Please provide a valid date.', 'volunteer-hours' ) );
 		}
 		$tomorrow = new DateTime( 'tomorrow', wp_timezone() );
 		if ( $dt > $tomorrow ) {
-			return new WP_Error( 'vh_future', __( 'The date cannot be in the future.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_future', __( 'The date cannot be in the future.', 'volunteer-hours' ) );
 		}
 
 		if ( $hours < 0.25 || $hours > 24 ) {
-			return new WP_Error( 'vh_hours', __( 'Hours must be between 0.25 and 24.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_hours', __( 'Hours must be between 0.25 and 24.', 'volunteer-hours' ) );
 		}
 
 		if ( empty( $project_ids ) ) {
-			return new WP_Error( 'vh_projects', __( 'Please select at least one project.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_projects', __( 'Please select at least one project.', 'volunteer-hours' ) );
 		}
 
 		// Only allow project ids that actually exist.
@@ -113,7 +120,7 @@ class VH_Data {
 		$valid_ids    = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vh_projects WHERE id IN ($placeholders)", $project_ids ) ); // phpcs:ignore
 		$valid_ids    = array_map( 'intval', $valid_ids );
 		if ( empty( $valid_ids ) ) {
-			return new WP_Error( 'vh_projects', __( 'Please select at least one valid project.', 'wp-volunteer-hours' ) );
+			return new WP_Error( 'vh_projects', __( 'Please select at least one valid project.', 'volunteer-hours' ) );
 		}
 
 		$now  = current_time( 'mysql' );
@@ -135,7 +142,7 @@ class VH_Data {
 			$ok = $wpdb->update( $wpdb->prefix . 'vh_entries', $data, array( 'id' => $entry_id ), $fmt, array( '%d' ) );
 			if ( false === $ok ) {
 				/* translators: %s: database error text */
-				return new WP_Error( 'vh_db', sprintf( __( 'The entry could not be saved (database error: %s). Please contact an administrator.', 'wp-volunteer-hours' ), $wpdb->last_error ) );
+			return new WP_Error( 'vh_db', sprintf( __( 'The entry could not be saved (database error: %s). Please contact an administrator.', 'volunteer-hours' ), $wpdb->last_error ) );
 			}
 			$wpdb->delete( $wpdb->prefix . 'vh_entry_projects', array( 'entry_id' => $entry_id ), array( '%d' ) );
 		} else {
@@ -145,7 +152,7 @@ class VH_Data {
 			$entry_id = (int) $wpdb->insert_id;
 			if ( false === $ok || ! $entry_id ) {
 				/* translators: %s: database error text */
-				return new WP_Error( 'vh_db', sprintf( __( 'The entry could not be saved (database error: %s). Please contact an administrator.', 'wp-volunteer-hours' ), $wpdb->last_error ) );
+			return new WP_Error( 'vh_db', sprintf( __( 'The entry could not be saved (database error: %s). Please contact an administrator.', 'volunteer-hours' ), $wpdb->last_error ) );
 			}
 		}
 
@@ -280,17 +287,23 @@ class VH_Data {
 	 */
 	public static function report_hours_per_user( $from, $to ) {
 		global $wpdb;
-		return $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT e.user_id, SUM(e.hours) AS total_hours, COUNT(*) AS entry_count
+		$cache_key = 'vh_report_users_' . md5( $from . '|' . $to );
+		$cached = wp_cache_get( $cache_key, 'vh_reports' );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+		$sql = $wpdb->prepare(
+			"SELECT e.user_id, SUM(e.hours) AS total_hours, COUNT(*) AS entry_count
 				FROM {$wpdb->prefix}vh_entries e
 				WHERE e.work_date >= %s AND e.work_date <= %s
 				GROUP BY e.user_id
 				ORDER BY total_hours DESC",
-				$from,
-				$to
-			)
+			$from,
+			$to
 		);
+		$results = $wpdb->get_results( $sql );
+		wp_cache_set( $cache_key, $results, 'vh_reports', HOUR_IN_SECONDS );
+		return $results;
 	}
 
 	/**
@@ -298,20 +311,26 @@ class VH_Data {
 	 */
 	public static function report_hours_per_project( $from, $to ) {
 		global $wpdb;
+		$cache_key = 'vh_report_projects_' . md5( $from . '|' . $to );
+		$cached = wp_cache_get( $cache_key, 'vh_reports' );
+		if ( false !== $cached ) {
+			return $cached;
+		}
 		$p = $wpdb->prefix;
-		return $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT pr.id, pr.name, SUM(e.hours) AS total_hours, COUNT(e.id) AS entry_count
+		$sql = $wpdb->prepare(
+			"SELECT pr.id, pr.name, SUM(e.hours) AS total_hours, COUNT(e.id) AS entry_count
 				FROM {$p}vh_projects pr
 				INNER JOIN {$p}vh_entry_projects ep ON ep.project_id = pr.id
 				INNER JOIN {$p}vh_entries e ON e.id = ep.entry_id
 				WHERE e.work_date >= %s AND e.work_date <= %s
 				GROUP BY pr.id, pr.name
 				ORDER BY total_hours DESC",
-				$from,
-				$to
-			)
+			$from,
+			$to
 		);
+		$results = $wpdb->get_results( $sql );
+		wp_cache_set( $cache_key, $results, 'vh_reports', HOUR_IN_SECONDS );
+		return $results;
 	}
 
 	/**

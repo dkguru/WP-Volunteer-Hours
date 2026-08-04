@@ -5,7 +5,7 @@ Tags: volunteers, hours, time tracking, reports, nonprofit
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.11
+Stable tag: 1.1.13
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -36,7 +36,7 @@ and CSV output with Excel formula-injection protection.
 
 == Installation ==
 
-1. In wp-admin, go to Plugins > Add New > Upload Plugin, choose wp-volunteer-hours.zip, install, and activate.
+1. In wp-admin, go to Plugins > Add New > Upload Plugin, choose volunteer-hours.zip, install, and activate.
 2. Go to Volunteer Hours > Projects and add your current projects.
 3. Create a page for volunteers and put the shortcode `[volunteer_hours]` in it.
 4. Ensure volunteers have accounts on the site (any role — Subscriber is enough).
@@ -61,6 +61,15 @@ Projects with registered hours cannot be deleted, only deactivated, so history i
 3. Admin reports: hours per user and hours per project with CSV export.
 
 == Changelog ==
+
+ = 1.1.13 =
+* Security: switched to per-action nonces across admin forms and handlers to harden CSRF protections.
+* Security/standards: replaced direct fopen/fgetcsv restore path with WP_Filesystem reading; added input unslashing and isset checks for admin POST handling.
+* Performance: converted remaining interpolated SQL to use $wpdb->prepare() and added caching (wp_cache_get/wp_cache_set) for expensive reads; added cache invalidation on writes.
+* Internal: renamed plugin slug and main file back to volunteer-hours; ensured all text-domain references are 'volunteer-hours'.
+* I18n: fixed translators comments and used ordered placeholders for all sprintf() translation strings.
+* Tests: updated PHPUnit bootstrap and tests to avoid direct file system calls and to reference the final plugin main file.
+* Packaging: created volunteer-hours.zip distribution (excludes tests and dev files) ready for installation.
 
 = 1.1.11 =
 * Doc: updates to includes/class-vh-admin.php documented. Changes include:

@@ -3,7 +3,7 @@
 		 colors="true"
 		 verbose="true">
 	<testsuites>
-		<testsuite name="wp-volunteer-hours">
+		<testsuite name="volunteer-hours">
 			<directory>./tests/phpunit</directory>
 		</testsuite>
 	</testsuites>

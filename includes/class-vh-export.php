@@ -158,7 +158,7 @@ class VH_Export {
 	 */
 	public function export_my_hours() {
 		if ( ! is_user_logged_in() ) {
-			wp_die( esc_html__( 'Please log in.', 'wp-volunteer-hours' ) );
+			wp_die( esc_html__( 'Please log in.', 'volunteer-hours' ) );
 		}
 		check_admin_referer( 'vh_export_my', 'vh_nonce' );
 
@@ -258,10 +258,9 @@ class VH_Export {
 		nocache_headers();
 		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '"' );
-
-		$out = fopen( 'php://output', 'w' );
 		// UTF-8 BOM so Excel opens non-ASCII names correctly.
-		fwrite( $out, "\xEF\xBB\xBF" );
+		echo "\xEF\xBB\xBF";
+		$out = fopen('php://output', 'w');
 		foreach ( $rows as $row ) {
 			fputcsv( $out, array_map( array( $this, 'escape_cell' ), $row ) );
 		}

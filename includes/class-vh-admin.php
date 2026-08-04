@@ -21,30 +21,42 @@ class VH_Admin {
 	public static function restore_backup_from_file( $tmp, $replace = false, $preserve_ids = false ) {
 		$result = array( 'errors' => array(), 'projects' => 0, 'entries' => 0 );
 		if ( ! is_readable( $tmp ) ) {
-			$result['errors'][] = __( 'Uploaded file not readable.', 'wp-volunteer-hours' );
+			$result['errors'][] = __( 'Uploaded file not readable.', 'volunteer-hours' );
 			return $result;
 		}
 
 		if ( $preserve_ids && ! $replace ) {
-			$result['errors'][] = __( 'Preserve IDs requires Replace existing data option.', 'wp-volunteer-hours' );
+			$result['errors'][] = __( 'Preserve IDs requires Replace existing data option.', 'volunteer-hours' );
 			$preserve_ids = false;
 		}
 
-		if ( false === ( $fh = fopen( $tmp, 'r' ) ) ) {
-			$result['errors'][] = __( 'Could not open uploaded file.', 'wp-volunteer-hours' );
+		// Use WP_Filesystem to read the uploaded file to satisfy WP coding standards.
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		global $wp_filesystem;
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		WP_Filesystem();
+		$content = $wp_filesystem->get_contents( $tmp );
+		if ( false === $content ) {
+			$result['errors'][] = __( 'Could not read uploaded file.', 'volunteer-hours' );
 			return $result;
 		}
 
+		$lines = preg_split( '/\r\n|\n|\r/', $content );
 		$projects = array();
 		$entries = array();
-		while ( ( $row = fgetcsv( $fh ) ) !== false ) {
+		foreach ( $lines as $line ) {
+			if ( '' === trim( $line ) ) {
+				continue;
+			}
+			$row = str_getcsv( $line );
 			if ( empty( $row ) || empty( $row[0] ) ) {
 				continue;
 			}
 			$first = trim( $row[0] );
 			if ( 'type' === strtolower( $first ) ) {
-				// header row; skip
-				continue;
+				continue; // header row
 			}
 			if ( 'project' === strtolower( $first ) ) {
 				$old_id = isset( $row[1] ) ? (int) $row[1] : 0;
@@ -70,7 +82,6 @@ class VH_Admin {
 				continue;
 			}
 		}
-		fclose( $fh );
 
 		global $wpdb;
 		$p = $wpdb->prefix;
@@ -88,14 +99,16 @@ class VH_Admin {
 			if ( $preserve_ids && $old > 0 ) {
 				$ok = $wpdb->insert( $p . 'vh_projects', array( 'id' => $old, 'name' => $pr['name'], 'active' => $pr['active'], 'created_at' => $pr['created_at'] ), array( '%d', '%s', '%d', '%s' ) );
 				if ( false === $ok ) {
-					$result['errors'][] = sprintf( __( 'Failed to insert project %s (old id %d): %s', 'wp-volunteer-hours' ), $pr['name'], $old, $wpdb->last_error );
+					/* translators: 1: project name, 2: old id, 3: database error text */
+					$result['errors'][] = sprintf( __( 'Failed to insert project %1$s (old id %2$d): %3$s', 'volunteer-hours' ), $pr['name'], $old, $wpdb->last_error );
 					continue;
 				}
 				$proj_map[ $old ] = (int) $old;
 			} else {
 				$ok = $wpdb->insert( $p . 'vh_projects', array( 'name' => $pr['name'], 'active' => $pr['active'], 'created_at' => $pr['created_at'] ), array( '%s', '%d', '%s' ) );
 				if ( false === $ok ) {
-					$result['errors'][] = sprintf( __( 'Failed to insert project %s: %s', 'wp-volunteer-hours' ), $pr['name'], $wpdb->last_error );
+					/* translators: 1: project name, 2: database error text */
+					$result['errors'][] = sprintf( __( 'Failed to insert project %1$s: %2$s', 'volunteer-hours' ), $pr['name'], $wpdb->last_error );
 					continue;
 				}
 				$proj_map[ $old ] = (int) $wpdb->insert_id;
@@ -116,14 +129,16 @@ class VH_Admin {
 			if ( $preserve_ids && $en['old_id'] > 0 ) {
 				$ok = $wpdb->insert( $p . 'vh_entries', array( 'id' => $en['old_id'], 'user_id' => $en['user_id'], 'work_date' => $en['work_date'], 'hours' => $en['hours'], 'description' => $en['description'], 'reviewed' => $en['reviewed'], 'paid' => $en['paid'], 'created_at' => $en['created_at'], 'updated_at' => $en['updated_at'] ), array( '%d', '%d', '%s', '%f', '%s', '%d', '%d', '%s', '%s' ) );
 				if ( false === $ok ) {
-					$result['errors'][] = sprintf( __( 'Failed to insert entry old id %d: %s', 'wp-volunteer-hours' ), $en['old_id'], $wpdb->last_error );
+					/* translators: 1: old entry id, 2: database error text */
+					$result['errors'][] = sprintf( __( 'Failed to insert entry old id %1$d: %2$s', 'volunteer-hours' ), $en['old_id'], $wpdb->last_error );
 					continue;
 				}
 				$new_eid = (int) $en['old_id'];
 			} else {
 				$ok = $wpdb->insert( $p . 'vh_entries', array( 'user_id' => $en['user_id'], 'work_date' => $en['work_date'], 'hours' => $en['hours'], 'description' => $en['description'], 'reviewed' => $en['reviewed'], 'paid' => $en['paid'], 'created_at' => $en['created_at'], 'updated_at' => $en['updated_at'] ), array( '%d', '%s', '%f', '%s', '%d', '%d', '%s', '%s' ) );
 				if ( false === $ok ) {
-					$result['errors'][] = sprintf( __( 'Failed to insert entry for user %d: %s', 'wp-volunteer-hours' ), $en['user_id'], $wpdb->last_error );
+					/* translators: 1: user id, 2: database error text */
+					$result['errors'][] = sprintf( __( 'Failed to insert entry for user %1$d: %2$s', 'volunteer-hours' ), $en['user_id'], $wpdb->last_error );
 					continue;
 				}
 				$new_eid = (int) $wpdb->insert_id;
@@ -284,7 +299,7 @@ class VH_Admin {
 			return;
 		}
 		if ( ! isset( $_POST['vh_nonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['vh_nonce'] ), 'vh_admin' ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'volunteer-hours' ) );
+			wp_die( esc_html__( 'Security check failed.', 'wp-volunteer-hours' ) );
 		}
 
 		$action   = sanitize_key( $_POST['vh_admin_action'] );
@@ -303,28 +318,28 @@ class VH_Admin {
 		switch ( $action ) {
 			case 'add_project':
 				$res = VH_Data::add_project( isset( $_POST['vh_name'] ) ? wp_unslash( $_POST['vh_name'] ) : '' ); // phpcs:ignore
-				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project added.', 'volunteer-hours' );
+				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project added.', 'wp-volunteer-hours' );
 				break;
 
 			case 'rename_project':
-				$res = VH_Data::rename_project( (int) $_POST['vh_id'], isset( $_POST['vh_name'] ) ? wp_unslash( $_POST['vh_name'] ) : '' ); // phpcs:ignore
-				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project renamed.', 'volunteer-hours' );
+				$res = VH_Data::rename_project( isset( $_POST['vh_id'] ) ? (int) $_POST['vh_id'] : 0, isset( $_POST['vh_name'] ) ? wp_unslash( $_POST['vh_name'] ) : '' ); // phpcs:ignore
+				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project renamed.', 'wp-volunteer-hours' );
 				break;
 
 			case 'toggle_project':
-				VH_Data::set_project_active( (int) $_POST['vh_id'], ! empty( $_POST['vh_active'] ) );
-				$msg = __( 'Project updated.', 'volunteer-hours' );
+				VH_Data::set_project_active( isset( $_POST['vh_id'] ) ? (int) $_POST['vh_id'] : 0, ! empty( $_POST['vh_active'] ) );
+				$msg = __( 'Project updated.', 'wp-volunteer-hours' );
 				break;
 
 			case 'delete_project':
-				$res = VH_Data::delete_project( (int) $_POST['vh_id'] );
-				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project deleted.', 'volunteer-hours' );
+				$res = VH_Data::delete_project( isset( $_POST['vh_id'] ) ? (int) $_POST['vh_id'] : 0 );
+				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project deleted.', 'wp-volunteer-hours' );
 				break;
 
 			case 'restore_backup':
 				// Handle uploaded backup CSV and restore data.
 				if ( empty( $_FILES['vh_backup_file'] ) || ! is_uploaded_file( $_FILES['vh_backup_file']['tmp_name'] ) ) {
-					$msg = __( 'No backup file uploaded.', 'volunteer-hours' );
+					$msg = __( 'No backup file uploaded.', 'wp-volunteer-hours' );
 					break;
 				}
 				$replace = ! empty( $_POST['vh_restore_replace'] );
@@ -332,30 +347,30 @@ class VH_Admin {
 				$preserve = ! empty( $_POST['vh_restore_preserve_ids'] );
 				$result = self::restore_backup_from_file( $tmp, $replace, $preserve );
 				if ( ! empty( $result['errors'] ) ) {
-					$msg = __( 'Restore completed with errors:', 'volunteer-hours' ) . ' ' . implode( ' ; ', $result['errors'] );
+					$msg = __( 'Restore completed with errors:', 'wp-volunteer-hours' ) . ' ' . implode( ' ; ', $result['errors'] );
 				} else {
-					$msg = __( 'Backup restored successfully.', 'volunteer-hours' );
+					$msg = __( 'Backup restored successfully.', 'wp-volunteer-hours' );
 				}
 				break;
 
 			case 'repair':
 				vh_activate();
-				$msg = __( 'Tables checked and repaired.', 'volunteer-hours' );
+				$msg = __( 'Tables checked and repaired.', 'wp-volunteer-hours' );
 				break;
 
 			case 'delete_entry':
-				VH_Data::delete_entry( (int) $_POST['vh_id'] );
-				$msg = __( 'Entry deleted.', 'volunteer-hours' );
+				VH_Data::delete_entry( isset( $_POST['vh_id'] ) ? (int) $_POST['vh_id'] : 0 );
+				$msg = __( 'Entry deleted.', 'wp-volunteer-hours' );
 				break;
 
 			case 'set_status':
 				$field = isset( $_POST['vh_field'] ) ? sanitize_key( $_POST['vh_field'] ) : '';
-				$res   = VH_Data::set_entry_status( (int) $_POST['vh_id'], $field, ! empty( $_POST['vh_value'] ) );
-				$msg   = is_wp_error( $res ) ? $res->get_error_message() : __( 'Status updated.', 'volunteer-hours' );
+				$res   = VH_Data::set_entry_status( isset( $_POST['vh_id'] ) ? (int) $_POST['vh_id'] : 0, $field, ! empty( $_POST['vh_value'] ) );
+				$msg   = is_wp_error( $res ) ? $res->get_error_message() : __( 'Status updated.', 'wp-volunteer-hours' );
 				break;
 
 			case 'update_entry':
-				$entry = VH_Data::get_entry( (int) $_POST['vh_id'] );
+				$entry = VH_Data::get_entry( isset( $_POST['vh_id'] ) ? (int) $_POST['vh_id'] : 0 );
 				if ( $entry ) {
 					$res = VH_Data::save_entry(
 						array(
@@ -364,10 +379,10 @@ class VH_Admin {
 							'work_date'   => isset( $_POST['vh_date'] ) ? sanitize_text_field( wp_unslash( $_POST['vh_date'] ) ) : '',
 							'hours'       => isset( $_POST['vh_hours'] ) ? sanitize_text_field( wp_unslash( $_POST['vh_hours'] ) ) : '',
 							'description' => isset( $_POST['vh_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['vh_description'] ) ) : '',
-							'project_ids' => isset( $_POST['vh_projects'] ) ? (array) $_POST['vh_projects'] : array(),
+							'project_ids' => isset( $_POST['vh_projects'] ) ? array_map( 'intval', (array) wp_unslash( $_POST['vh_projects'] ) ) : array(),
 						)
 					);
-					$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Entry updated.', 'volunteer-hours' );
+					$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Entry updated.', 'wp-volunteer-hours' );
 				}
 				break;
 		}
@@ -407,13 +422,13 @@ class VH_Admin {
 
 		<table class="widefat striped vh-admin-table">
 			<thead><tr>
-				<th><?php esc_html_e( 'Project', 'volunteer-hours' ); ?></th>
-				<th><?php esc_html_e( 'Status', 'volunteer-hours' ); ?></th>
-				<th><?php esc_html_e( 'Actions', 'volunteer-hours' ); ?></th>
+				<th><?php esc_html_e( 'Project', 'wp-volunteer-hours' ); ?></th>
+				<th><?php esc_html_e( 'Status', 'wp-volunteer-hours' ); ?></th>
+				<th><?php esc_html_e( 'Actions', 'wp-volunteer-hours' ); ?></th>
 			</tr></thead>
 			<tbody>
 			<?php if ( empty( $projects ) ) : ?>
-				<tr><td colspan="3"><?php esc_html_e( 'No projects yet. Add the first one above.', 'volunteer-hours' ); ?></td></tr>
+				<tr><td colspan="3"><?php esc_html_e( 'No projects yet. Add the first one above.', 'wp-volunteer-hours' ); ?></td></tr>
 			<?php endif; ?>
 			<?php foreach ( $projects as $pr ) : ?>
 				<tr>
@@ -424,28 +439,28 @@ class VH_Admin {
 								<input type="hidden" name="vh_admin_action" value="rename_project" />
 								<input type="hidden" name="vh_id" value="<?php echo esc_attr( $pr->id ); ?>" />
 								<input type="text" name="vh_name" value="<?php echo esc_attr( $pr->name ); ?>" required />
-								<button type="submit" class="button"><?php esc_html_e( 'Save', 'volunteer-hours' ); ?></button>
-								<a href="<?php echo esc_url( remove_query_arg( 'vh_edit' ) ); ?>"><?php esc_html_e( 'Cancel', 'volunteer-hours' ); ?></a>
+								<button type="submit" class="button"><?php esc_html_e( 'Save', 'wp-volunteer-hours' ); ?></button>
+								<a href="<?php echo esc_url( remove_query_arg( 'vh_edit' ) ); ?>"><?php esc_html_e( 'Cancel', 'wp-volunteer-hours' ); ?></a>
 							</form>
 						<?php else : ?>
 							<?php echo esc_html( $pr->name ); ?>
 						<?php endif; ?>
 					</td>
-					<td><?php echo $pr->active ? esc_html__( 'Active', 'volunteer-hours' ) : esc_html__( 'Inactive', 'volunteer-hours' ); ?></td>
+					<td><?php echo $pr->active ? esc_html__( 'Active', 'wp-volunteer-hours' ) : esc_html__( 'Inactive', 'wp-volunteer-hours' ); ?></td>
 					<td>
-						<a href="<?php echo esc_url( add_query_arg( 'vh_edit', (int) $pr->id ) ); ?>"><?php esc_html_e( 'Rename', 'volunteer-hours' ); ?></a>
+						<a href="<?php echo esc_url( add_query_arg( 'vh_edit', (int) $pr->id ) ); ?>"><?php esc_html_e( 'Rename', 'wp-volunteer-hours' ); ?></a>
 						<form method="post" class="vh-inline">
 							<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
 							<input type="hidden" name="vh_admin_action" value="toggle_project" />
 							<input type="hidden" name="vh_id" value="<?php echo esc_attr( $pr->id ); ?>" />
 							<input type="hidden" name="vh_active" value="<?php echo $pr->active ? '' : '1'; ?>" />
-							<button type="submit" class="button-link"><?php echo $pr->active ? esc_html__( 'Deactivate', 'volunteer-hours' ) : esc_html__( 'Activate', 'volunteer-hours' ); ?></button>
+							<button type="submit" class="button-link"><?php echo $pr->active ? esc_html__( 'Deactivate', 'wp-volunteer-hours' ) : esc_html__( 'Activate', 'wp-volunteer-hours' ); ?></button>
 						</form>
-						<form method="post" class="vh-inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this project?', 'volunteer-hours' ) ); ?>');">
+						<form method="post" class="vh-inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this project?', 'wp-volunteer-hours' ) ); ?>');">
 							<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
 							<input type="hidden" name="vh_admin_action" value="delete_project" />
 							<input type="hidden" name="vh_id" value="<?php echo esc_attr( $pr->id ); ?>" />
-							<button type="submit" class="button-link vh-danger"><?php esc_html_e( 'Delete', 'volunteer-hours' ); ?></button>
+							<button type="submit" class="button-link vh-danger"><?php esc_html_e( 'Delete', 'wp-volunteer-hours' ); ?></button>
 						</form>
 					</td>
 				</tr>

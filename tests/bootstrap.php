@@ -17,7 +17,7 @@ if ( ! $tests_dir ) {
 }
 
 if ( ! is_dir( $tests_dir ) ) {
-	fwrite( STDERR, "Could not find WP test library. Set WP_TESTS_DIR environment variable to its path." );
+	error_log( "Could not find WP test library. Set WP_TESTS_DIR environment variable to its path." );
 	exit(1);
 }
 
@@ -26,7 +26,7 @@ require_once $tests_dir . '/includes/functions.php';
 require_once $tests_dir . '/includes/bootstrap.php';
 
 // Load the plugin file.
-require_once dirname( __DIR__ ) . '/wp-volunteer-hours.php';
+require_once dirname( __DIR__ ) . '/volunteer-hours.php';
 
 // Make sure exports class is loaded.
 require_once dirname( __DIR__ ) . '/includes/class-vh-export.php';
