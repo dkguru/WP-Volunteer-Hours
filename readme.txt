@@ -5,7 +5,7 @@ Tags: volunteers, hours, time tracking, reports, nonprofit
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.14
+Stable tag: 1.1.17
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -62,8 +62,23 @@ Projects with registered hours cannot be deleted, only deactivated, so history i
 
 == Changelog ==
 
-  = 1.1.14 =
-* Security: implemented per-action nonces across admin and front-end forms and export URLs/handlers to harden CSRF protections.
+= 1.1.17 =
+* Fixed: Broken CSV exports and stale report caches
+* Exports: Unify nonce naming behind VH_Export::nonce_action()/nonce_field(), used by both URL builders and verifiers. The per-action nonces added in 1.1.15 were generated with different names than the handlers checked, so My Hours CSV returned 500 and the All Entries and report CSV exports returned 403.
+* Exports: Replace the two stale check_admin_referer( 'vh_export_admin' ) calls.
+* Caching: Invalidate on entry save, status change and bulk restore; these paths never cleared report caches, so totals could stay stale for an hour on sites with a persistent object cache.
+* Caching: Version the plugin's own cache keys instead of calling wp_cache_flush(), which wiped core and every other plugin's cache on each project write.
+* Caching: Drop wp_cache_delete() calls keyed on md5('|'), which never matched a real key.
+* Cleanup: Remove duplicate $sql build and placeholder markers in get_entries().
+
+= 1.1.16 =
+* Fixed: the volunteer "Download CSV" button and the admin All Entries / report CSV exports failed with a security error. The per-action nonces introduced in 1.1.15 were generated with different names than the handlers verified; both now derive their names from one shared helper.
+* Fixed: registering, editing or restoring hours did not clear cached reports, so on sites with a persistent object cache (Redis/Memcached) totals could stay stale for up to an hour.
+* Changed: cache invalidation no longer calls wp_cache_flush(), which wiped the entire site's object cache including core and other plugins. The plugin now versions its own cache keys.
+* Removed leftover placeholder code in the entry query.
+
+= 1.1.15 =
+* Security: added PHPCS ignore for test fallback unlink() and ensured wp_delete_file() is used where available; implemented per-action nonces across admin and front-end forms and export URLs/handlers to harden CSRF protections.
 * Security/standards: replaced direct fopen/fgetcsv restore path with WP_Filesystem reading; added input unslashing and explicit isset checks for admin POST handling.
 * Performance: converted remaining interpolated SQL to use explicit table variables and $wpdb->prepare() where appropriate; added caching (wp_cache_get/wp_cache_set) for expensive reads and implemented cache invalidation on write paths.
 * Internal: refactored export URL builder to emit per-action nonces and updated export handlers; normalized table references to explicit $wpdb->prefix variables.

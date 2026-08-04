@@ -46,6 +46,7 @@ class VH_Restore_Test extends WP_UnitTestCase {
 		if ( function_exists( 'wp_delete_file' ) ) {
 			wp_delete_file( $tmp );
 		} else {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- fallback when WP file API is not available in test environment
 			@unlink( $tmp );
 		}
 

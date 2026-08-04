@@ -306,6 +306,7 @@ class VH_Frontend {
 	}
 
 	public static function my_csv_url( $month ) {
+		// Nonce names come from VH_Export so this URL always matches the verifier.
 		return wp_nonce_url(
 			add_query_arg(
 				array(
@@ -314,8 +315,8 @@ class VH_Frontend {
 				),
 				admin_url( 'admin-post.php' )
 			),
-			'vh_export_my',
-			'vh_nonce'
+			VH_Export::nonce_action( 'vh_export_my_hours' ),
+			VH_Export::nonce_field( 'vh_export_my_hours' )
 		);
 	}
 

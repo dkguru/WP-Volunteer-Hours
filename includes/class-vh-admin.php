@@ -169,6 +169,9 @@ class VH_Admin {
 			}
 		}
 
+		// Bulk restore writes straight to the tables, so retire the plugin's caches.
+		VH_Data::invalidate_cache();
+
 		return $result;
 	}
 

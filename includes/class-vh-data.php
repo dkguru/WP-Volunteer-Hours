@@ -9,12 +9,53 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class VH_Data {
 
+	/**
+	 * Cache group used for every value this class caches.
+	 */
+	const CACHE_GROUP = 'vh_data';
+
+	/**
+	 * Monotonic cache version. Every cache key embeds it, so bumping the version
+	 * retires all of this plugin's cached values at once without touching the
+	 * rest of the site's object cache (wp_cache_flush() would wipe core and every
+	 * other plugin too).
+	 *
+	 * @return int
+	 */
+	private static function cache_version() {
+		$version = wp_cache_get( 'vh_cache_version', self::CACHE_GROUP );
+		if ( false === $version ) {
+			$version = (int) get_option( 'vh_cache_version', 1 );
+			wp_cache_set( 'vh_cache_version', $version, self::CACHE_GROUP, DAY_IN_SECONDS );
+		}
+		return (int) $version;
+	}
+
+	/**
+	 * Build a versioned cache key.
+	 *
+	 * @param string $key Logical key name.
+	 * @return string
+	 */
+	private static function cache_key( $key ) {
+		return 'vh_v' . self::cache_version() . '_' . $key;
+	}
+
+	/**
+	 * Retire every cached value belonging to this plugin. Called after any write.
+	 */
+	public static function invalidate_cache() {
+		$version = self::cache_version() + 1;
+		update_option( 'vh_cache_version', $version, false );
+		wp_cache_set( 'vh_cache_version', $version, self::CACHE_GROUP, DAY_IN_SECONDS );
+	}
+
 	/* ---------- Projects ---------- */
 
 	public static function get_projects( $active_only = false ) {
 		global $wpdb;
-		$cache_key = 'vh_projects_' . ( $active_only ? 'active' : 'all' );
-		$cached = wp_cache_get( $cache_key, 'vh_data' );
+		$cache_key = self::cache_key( 'projects_' . ( $active_only ? 'active' : 'all' ) );
+		$cached = wp_cache_get( $cache_key, self::CACHE_GROUP );
 		if ( false !== $cached ) {
 			return $cached;
 		}
@@ -26,7 +67,7 @@ class VH_Data {
 		}
 		$sql .= ' ORDER BY name ASC';
 		$results = $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name from $wpdb->prefix is trusted; results are cached.
-		wp_cache_set( $cache_key, $results, 'vh_data', HOUR_IN_SECONDS );
+		wp_cache_set( $cache_key, $results, self::CACHE_GROUP, HOUR_IN_SECONDS );
 		return $results;
 	}
 
@@ -49,11 +90,7 @@ class VH_Data {
 			),
 			array( '%s', '%d', '%s' )
 		);
-		// Invalidate cached project lists and reports after write.
-		wp_cache_delete( 'vh_projects_all', 'vh_data' );
-		wp_cache_delete( 'vh_projects_active', 'vh_data' );
-		// Clear report caches to ensure fresh aggregates.
-		wp_cache_flush();
+		self::invalidate_cache();
 		return (int) $wpdb->insert_id;
 	}
 
@@ -64,18 +101,14 @@ class VH_Data {
 			return new WP_Error( 'vh_empty', __( 'Project name cannot be empty.', 'volunteer-hours' ) );
 		}
 		$wpdb->update( $wpdb->prefix . 'vh_projects', array( 'name' => $name ), array( 'id' => (int) $id ), array( '%s' ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		wp_cache_delete( 'vh_projects_all', 'vh_data' );
-		wp_cache_delete( 'vh_projects_active', 'vh_data' );
-		wp_cache_flush();
+		self::invalidate_cache();
 		return true;
 	}
 
 	public static function set_project_active( $id, $active ) {
 		global $wpdb;
 		$wpdb->update( $wpdb->prefix . 'vh_projects', array( 'active' => $active ? 1 : 0 ), array( 'id' => (int) $id ), array( '%d' ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		wp_cache_delete( 'vh_projects_all', 'vh_data' );
-		wp_cache_delete( 'vh_projects_active', 'vh_data' );
-		wp_cache_flush();
+		self::invalidate_cache();
 		return true;
 	}
 
@@ -90,9 +123,7 @@ class VH_Data {
 			return new WP_Error( 'vh_in_use', __( 'This project has hours registered against it. Deactivate it instead of deleting.', 'volunteer-hours' ) );
 		}
 		$wpdb->delete( $wpdb->prefix . 'vh_projects', array( 'id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		wp_cache_delete( 'vh_projects_all', 'vh_data' );
-		wp_cache_delete( 'vh_projects_active', 'vh_data' );
-		wp_cache_flush();
+		self::invalidate_cache();
 		return true;
 	}
 
@@ -184,6 +215,9 @@ class VH_Data {
 			);
 		}
 
+		// A new or edited entry changes both listings and report aggregates.
+		self::invalidate_cache();
+
 		return $entry_id;
 	}
 
@@ -213,6 +247,7 @@ class VH_Data {
 			$data['paid'] = 0; // Un-reviewing clears paid.
 		}
 		$wpdb->update( $wpdb->prefix . 'vh_entries', $data, array( 'id' => $id ), array( '%d', '%d' ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; identifiers come from $wpdb->prefix only and all values are passed through $wpdb->prepare() or $wpdb->insert()/update() formats. Object caching is not appropriate for these admin-side write/verify operations.
+		self::invalidate_cache();
 		return true;
 	}
 
@@ -243,10 +278,7 @@ class VH_Data {
 		$id = (int) $id;
 		$wpdb->delete( $wpdb->prefix . 'vh_entry_projects', array( 'entry_id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->delete( $wpdb->prefix . 'vh_entries', array( 'id' => $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		// Invalidate report caches since an entry was removed.
-		wp_cache_delete( 'vh_report_users_' . md5( '|' ), 'vh_reports' );
-		wp_cache_delete( 'vh_report_projects_' . md5( '|' ), 'vh_reports' );
-		wp_cache_flush();
+		self::invalidate_cache();
 		return true;
 	}
 
@@ -288,20 +320,11 @@ class VH_Data {
 			}
 		}
 
-		$sql = "SELECT e.*, /* placeholder */
-				( SELECT GROUP_CONCAT(pr.name ORDER BY pr.name SEPARATOR ', ')
-				  FROM {$p}vh_entry_projects ep
-				  INNER JOIN {$p}vh_projects pr ON pr.id = ep.project_id
-				  WHERE ep.entry_id = e.id ) AS project_names
-			FROM {$p}vh_entries e
-			WHERE " . implode( ' AND ', $where ) . '
-			ORDER BY e.work_date DESC, e.id DESC';
-
 		$entry_projects_table = $p . 'vh_entry_projects';
 		$projects_table = $p . 'vh_projects';
 		$entries_table = $p . 'vh_entries';
 
-		$sql = "SELECT e.*, /* placeholder */
+		$sql = "SELECT e.*,
 				( SELECT GROUP_CONCAT(pr.name ORDER BY pr.name SEPARATOR ', ')
 				  FROM {$entry_projects_table} ep
 				  INNER JOIN {$projects_table} pr ON pr.id = ep.project_id
@@ -313,7 +336,6 @@ class VH_Data {
 		if ( $vals ) {
 			$sql = $wpdb->prepare( $sql, $vals ); // phpcs:ignore
 		}
-		// Placeholder no-op patch to touch file context.
 		return $wpdb->get_results( $sql ); // phpcs:ignore
 	}
 
@@ -322,8 +344,8 @@ class VH_Data {
 	 */
 	public static function report_hours_per_user( $from, $to ) {
 		global $wpdb;
-		$cache_key = 'vh_report_users_' . md5( $from . '|' . $to );
-		$cached = wp_cache_get( $cache_key, 'vh_reports' );
+		$cache_key = self::cache_key( 'report_users_' . md5( $from . '|' . $to ) );
+		$cached = wp_cache_get( $cache_key, self::CACHE_GROUP );
 		if ( false !== $cached ) {
 			return $cached;
 		}
@@ -337,7 +359,7 @@ class VH_Data {
 			$to
 		);
 		$results = $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $sql is built with $wpdb->prepare() directly above; results are cached on the next line.
-		wp_cache_set( $cache_key, $results, 'vh_reports', HOUR_IN_SECONDS );
+		wp_cache_set( $cache_key, $results, self::CACHE_GROUP, HOUR_IN_SECONDS );
 		return $results;
 	}
 
@@ -346,8 +368,8 @@ class VH_Data {
 	 */
 	public static function report_hours_per_project( $from, $to ) {
 		global $wpdb;
-		$cache_key = 'vh_report_projects_' . md5( $from . '|' . $to );
-		$cached = wp_cache_get( $cache_key, 'vh_reports' );
+		$cache_key = self::cache_key( 'report_projects_' . md5( $from . '|' . $to ) );
+		$cached = wp_cache_get( $cache_key, self::CACHE_GROUP );
 		if ( false !== $cached ) {
 			return $cached;
 		}
@@ -367,7 +389,7 @@ class VH_Data {
 			$to
 		);
 		$results = $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $sql is built with $wpdb->prepare() directly above; results are cached on the next line.
-		wp_cache_set( $cache_key, $results, 'vh_reports', HOUR_IN_SECONDS );
+		wp_cache_set( $cache_key, $results, self::CACHE_GROUP, HOUR_IN_SECONDS );
 		return $results;
 	}
 

@@ -63,13 +63,48 @@ class VH_Export {
 	 * @return string
 	 */
 	private static function build_export_url( $action, $params = array() ) {
-		$params = (array) $params;
+		$params           = (array) $params;
 		$params['action'] = $action;
-		// Use per-action export nonces to harden CSRF protections on exported URLs.
-		$nonce_action = 'vh_export_' . $action;
-		$nonce_field  = 'vh_nonce_' . $action;
-		$url = add_query_arg( $params, admin_url( 'admin-post.php' ) );
-		return wp_nonce_url( $url, $nonce_action, $nonce_field );
+		$url              = add_query_arg( $params, admin_url( 'admin-post.php' ) );
+		return wp_nonce_url( $url, self::nonce_action( $action ), self::nonce_field( $action ) );
+	}
+
+	/**
+	 * Nonce action name for an export. Single source of truth: URL builders and
+	 * request verifiers both derive their names from here, so they cannot drift apart.
+	 *
+	 * @param string $action admin_post action name, e.g. 'vh_export_report'.
+	 * @return string
+	 */
+	public static function nonce_action( $action ) {
+		return 'vh_nonce_action_' . $action;
+	}
+
+	/**
+	 * Query-arg / form-field name carrying the nonce for an export.
+	 *
+	 * @param string $action admin_post action name.
+	 * @return string
+	 */
+	public static function nonce_field( $action ) {
+		return 'vh_nonce_' . $action;
+	}
+
+	/**
+	 * Verify the nonce for an export request, or stop with a clear message.
+	 *
+	 * @param string $action admin_post action name.
+	 */
+	private static function verify_export_nonce( $action ) {
+		$field = self::nonce_field( $action );
+		$nonce = isset( $_GET[ $field ] ) ? sanitize_text_field( wp_unslash( $_GET[ $field ] ) ) : '';
+		if ( '' === $nonce || ! wp_verify_nonce( $nonce, self::nonce_action( $action ) ) ) {
+			wp_die(
+				esc_html__( 'Security check failed. Please go back, reload the page and try the download again.', 'volunteer-hours' ),
+				esc_html__( 'Security check failed', 'volunteer-hours' ),
+				array( 'response' => 403 )
+			);
+		}
 	}
 
 	/**
@@ -79,11 +114,7 @@ class VH_Export {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Insufficient permissions.', 'volunteer-hours' ) );
 		}
-		$nonce_field = 'vh_nonce_vh_export_unpaid';
-		$nonce_action = 'vh_export_vh_export_unpaid';
-		if ( ! isset( $_GET[ $nonce_field ] ) || ! wp_verify_nonce( wp_unslash( $_GET[ $nonce_field ] ), $nonce_action ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'volunteer-hours' ) );
-		}
+		self::verify_export_nonce( 'vh_export_unpaid' );
 
 		$from = isset( $_GET['vh_from'] ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', wp_unslash( $_GET['vh_from'] ) ) ? sanitize_text_field( wp_unslash( $_GET['vh_from'] ) ) : wp_date( 'Y-m-01' ); // phpcs:ignore
 		$to   = isset( $_GET['vh_to'] ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', wp_unslash( $_GET['vh_to'] ) ) ? sanitize_text_field( wp_unslash( $_GET['vh_to'] ) ) : wp_date( 'Y-m-t' ); // phpcs:ignore
@@ -135,11 +166,7 @@ class VH_Export {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Insufficient permissions.', 'volunteer-hours' ) );
 		}
-		$nonce_field = 'vh_nonce_vh_export_backup';
-		$nonce_action = 'vh_export_vh_export_backup';
-		if ( ! isset( $_GET[ $nonce_field ] ) || ! wp_verify_nonce( wp_unslash( $_GET[ $nonce_field ] ), $nonce_action ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'volunteer-hours' ) );
-		}
+		self::verify_export_nonce( 'vh_export_backup' );
 
 		global $wpdb;
 		$p = $wpdb->prefix;
@@ -174,11 +201,7 @@ class VH_Export {
 		if ( ! is_user_logged_in() ) {
 			wp_die( esc_html__( 'Please log in.', 'volunteer-hours' ) );
 		}
-		$nonce_field = 'vh_nonce_vh_export_my_hours';
-		$nonce_action = 'vh_export_vh_export_my_hours';
-		if ( ! isset( $_GET[ $nonce_field ] ) || ! wp_verify_nonce( wp_unslash( $_GET[ $nonce_field ] ), $nonce_action ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'volunteer-hours' ) );
-		}
+		self::verify_export_nonce( 'vh_export_my_hours' );
 
 		$month = isset( $_GET['vh_month'] ) && preg_match( '/^\d{4}-\d{2}$/', wp_unslash( $_GET['vh_month'] ) ) ? sanitize_text_field( wp_unslash( $_GET['vh_month'] ) ) : wp_date( 'Y-m' ); // phpcs:ignore
 		$from  = $month . '-01';
@@ -210,7 +233,7 @@ class VH_Export {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Insufficient permissions.', 'volunteer-hours' ) );
 		}
-		check_admin_referer( 'vh_export_admin', 'vh_nonce' );
+		self::verify_export_nonce( 'vh_export_entries' );
 
 		$month      = isset( $_GET['vh_month'] ) && preg_match( '/^\d{4}-\d{2}$/', wp_unslash( $_GET['vh_month'] ) ) ? sanitize_text_field( wp_unslash( $_GET['vh_month'] ) ) : wp_date( 'Y-m' ); // phpcs:ignore
 		$user_id    = isset( $_GET['vh_user'] ) ? (int) $_GET['vh_user'] : 0;
@@ -244,7 +267,7 @@ class VH_Export {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Insufficient permissions.', 'volunteer-hours' ) );
 		}
-		check_admin_referer( 'vh_export_admin', 'vh_nonce' );
+		self::verify_export_nonce( 'vh_export_report' );
 
 		$which = isset( $_GET['vh_which'] ) && 'projects' === $_GET['vh_which'] ? 'projects' : 'users';
 		$from  = isset( $_GET['vh_from'] ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', wp_unslash( $_GET['vh_from'] ) ) ? sanitize_text_field( wp_unslash( $_GET['vh_from'] ) ) : wp_date( 'Y-m-01' ); // phpcs:ignore
