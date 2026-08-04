@@ -62,6 +62,10 @@ Projects with registered hours cannot be deleted, only deactivated, so history i
 
 == Changelog ==
 
+= 1.1.10 =
+* Added: Backup and Restore functionality. Admins can download a full CSV backup (projects + entries) and restore it via the Reports screen. Restore supports an option to replace existing data and to preserve original numeric IDs (use with caution).
+* Improved: Restore reports per-row errors to the admin notice on completion and adjusts table AUTO_INCREMENT when preserving IDs.
+
 = 1.1.9 =
 * Added: unpaid CSV now includes Entry ID and User Email columns.
 * Tests: add PHPUnit test scaffold and an unpaid-export test (requires WordPress test environment).

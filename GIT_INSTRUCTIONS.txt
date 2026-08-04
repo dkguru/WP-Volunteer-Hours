@@ -4,14 +4,14 @@ Run these commands in your repository root to commit changes and create a tag:
 git add -A
 
 # Commit
-git commit -m "Bump to v1.1.9: include entry id and user email in unpaid CSV export; add PHPUnit test scaffold; refactor export URL builder; update changelog"
+git commit -m "Bump to v1.1.10: add backup & restore (with preserve IDs option), improved restore error reporting, update changelog and tests"
 
 # Create annotated tag
-git tag -a v1.1.9 -m "v1.1.9: unpaid CSV includes entry id and user email; add PHPUnit tests scaffold"
+git tag -a v1.1.10 -m "v1.1.10: backup & restore; preserve IDs option; restore improvements"
 
 # Push commit and tag to origin (optional)
 # git push origin main
-# git push origin v1.1.9
+# git push origin v1.1.10
 
 Notes:
 - If your branch isn't 'main', replace with the correct branch name when pushing.

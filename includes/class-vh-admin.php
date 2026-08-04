@@ -7,6 +7,148 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+	/**
+	 * Restore backup CSV from an uploaded temp file.
+	 *
+	 * @param string $tmp Path to uploaded CSV file.
+	 * @param bool   $replace Whether to delete existing data first.
+	 * @param bool   $preserve_ids Whether to preserve original numeric IDs (requires replace=true).
+	 * @return array ['errors' => array(), 'projects' => int, 'entries' => int]
+	 */
+	public static function restore_backup_from_file( $tmp, $replace = false, $preserve_ids = false ) {
+		$result = array( 'errors' => array(), 'projects' => 0, 'entries' => 0 );
+		if ( ! is_readable( $tmp ) ) {
+			$result['errors'][] = __( 'Uploaded file not readable.', 'volunteer-hours' );
+			return $result;
+		}
+
+		if ( $preserve_ids && ! $replace ) {
+			$result['errors'][] = __( 'Preserve IDs requires Replace existing data option.', 'volunteer-hours' );
+			$preserve_ids = false;
+		}
+
+		if ( false === ( $fh = fopen( $tmp, 'r' ) ) ) {
+			$result['errors'][] = __( 'Could not open uploaded file.', 'volunteer-hours' );
+			return $result;
+		}
+
+		$projects = array();
+		$entries = array();
+		while ( ( $row = fgetcsv( $fh ) ) !== false ) {
+			if ( empty( $row ) || empty( $row[0] ) ) {
+				continue;
+			}
+			$first = trim( $row[0] );
+			if ( 'type' === strtolower( $first ) ) {
+				// header row; skip
+				continue;
+			}
+			if ( 'project' === strtolower( $first ) ) {
+				$old_id = isset( $row[1] ) ? (int) $row[1] : 0;
+				$name = isset( $row[2] ) ? $row[2] : '';
+				$active = isset( $row[3] ) ? (int) $row[3] : 1;
+				$created_at = isset( $row[4] ) ? $row[4] : current_time( 'mysql' );
+				$projects[ $old_id ] = array( 'name' => $name, 'active' => $active, 'created_at' => $created_at );
+				continue;
+			}
+			if ( 'entry' === strtolower( $first ) ) {
+				$entries[] = array(
+					'old_id' => isset( $row[1] ) ? (int) $row[1] : 0,
+					'user_id' => isset( $row[2] ) ? (int) $row[2] : 0,
+					'work_date' => isset( $row[3] ) ? $row[3] : '',
+					'hours' => isset( $row[4] ) ? $row[4] : 0,
+					'description' => isset( $row[5] ) ? $row[5] : '',
+					'reviewed' => isset( $row[6] ) ? (int) $row[6] : 0,
+					'paid' => isset( $row[7] ) ? (int) $row[7] : 0,
+					'created_at' => isset( $row[8] ) ? $row[8] : current_time( 'mysql' ),
+					'updated_at' => isset( $row[9] ) ? $row[9] : current_time( 'mysql' ),
+					'project_ids' => isset( $row[10] ) ? $row[10] : '',
+				);
+				continue;
+			}
+		}
+		fclose( $fh );
+
+		global $wpdb;
+		$p = $wpdb->prefix;
+
+		// Optionally clear existing data
+		if ( $replace ) {
+			$wpdb->query( "DELETE FROM {$p}vh_entry_projects" ); // phpcs:ignore
+			$wpdb->query( "DELETE FROM {$p}vh_entries" ); // phpcs:ignore
+			$wpdb->query( "DELETE FROM {$p}vh_projects" ); // phpcs:ignore
+		}
+
+		// Insert projects and keep mapping from old_id to new_id
+		$proj_map = array();
+		foreach ( $projects as $old => $pr ) {
+			if ( $preserve_ids && $old > 0 ) {
+				$ok = $wpdb->insert( $p . 'vh_projects', array( 'id' => $old, 'name' => $pr['name'], 'active' => $pr['active'], 'created_at' => $pr['created_at'] ), array( '%d', '%s', '%d', '%s' ) );
+				if ( false === $ok ) {
+					$result['errors'][] = sprintf( __( 'Failed to insert project %s (old id %d): %s', 'volunteer-hours' ), $pr['name'], $old, $wpdb->last_error );
+					continue;
+				}
+				$proj_map[ $old ] = (int) $old;
+			} else {
+				$ok = $wpdb->insert( $p . 'vh_projects', array( 'name' => $pr['name'], 'active' => $pr['active'], 'created_at' => $pr['created_at'] ), array( '%s', '%d', '%s' ) );
+				if ( false === $ok ) {
+					$result['errors'][] = sprintf( __( 'Failed to insert project %s: %s', 'volunteer-hours' ), $pr['name'], $wpdb->last_error );
+					continue;
+				}
+				$proj_map[ $old ] = (int) $wpdb->insert_id;
+			}
+			$result['projects']++;
+		}
+
+		// If preserving IDs, bump auto_increment to max id + 1 for projects
+		if ( $preserve_ids ) {
+			$max = $wpdb->get_var( "SELECT COALESCE(MAX(id),0) FROM {$p}vh_projects" ); // phpcs:ignore
+			if ( $max ) {
+				$wpdb->query( "ALTER TABLE {$p}vh_projects AUTO_INCREMENT = " . ( (int) $max + 1 ) ); // phpcs:ignore
+			}
+		}
+
+		// Insert entries and entry_projects
+		foreach ( $entries as $en ) {
+			if ( $preserve_ids && $en['old_id'] > 0 ) {
+				$ok = $wpdb->insert( $p . 'vh_entries', array( 'id' => $en['old_id'], 'user_id' => $en['user_id'], 'work_date' => $en['work_date'], 'hours' => $en['hours'], 'description' => $en['description'], 'reviewed' => $en['reviewed'], 'paid' => $en['paid'], 'created_at' => $en['created_at'], 'updated_at' => $en['updated_at'] ), array( '%d', '%d', '%s', '%f', '%s', '%d', '%d', '%s', '%s' ) );
+				if ( false === $ok ) {
+					$result['errors'][] = sprintf( __( 'Failed to insert entry old id %d: %s', 'volunteer-hours' ), $en['old_id'], $wpdb->last_error );
+					continue;
+				}
+				$new_eid = (int) $en['old_id'];
+			} else {
+				$ok = $wpdb->insert( $p . 'vh_entries', array( 'user_id' => $en['user_id'], 'work_date' => $en['work_date'], 'hours' => $en['hours'], 'description' => $en['description'], 'reviewed' => $en['reviewed'], 'paid' => $en['paid'], 'created_at' => $en['created_at'], 'updated_at' => $en['updated_at'] ), array( '%d', '%s', '%f', '%s', '%d', '%d', '%s', '%s' ) );
+				if ( false === $ok ) {
+					$result['errors'][] = sprintf( __( 'Failed to insert entry for user %d: %s', 'volunteer-hours' ), $en['user_id'], $wpdb->last_error );
+					continue;
+				}
+				$new_eid = (int) $wpdb->insert_id;
+			}
+
+			// Handle project links
+			if ( ! empty( $en['project_ids'] ) ) {
+				$old_pids = array_filter( array_map( 'intval', explode( ',', $en['project_ids'] ) ) );
+				foreach ( $old_pids as $op ) {
+					if ( isset( $proj_map[ $op ] ) ) {
+						$wpdb->insert( $p . 'vh_entry_projects', array( 'entry_id' => $new_eid, 'project_id' => $proj_map[ $op ] ), array( '%d', '%d' ) );
+					}
+				}
+			}
+			$result['entries']++;
+		}
+
+		// If preserving IDs, bump auto_increment to max id + 1 for entries
+		if ( $preserve_ids ) {
+			$max = $wpdb->get_var( "SELECT COALESCE(MAX(id),0) FROM {$p}vh_entries" ); // phpcs:ignore
+			if ( $max ) {
+				$wpdb->query( "ALTER TABLE {$p}vh_entries AUTO_INCREMENT = " . ( (int) $max + 1 ) ); // phpcs:ignore
+			}
+		}
+
+		return $result;
+	}
+
 class VH_Admin {
 
 	public function __construct() {
@@ -176,6 +318,23 @@ class VH_Admin {
 			case 'delete_project':
 				$res = VH_Data::delete_project( (int) $_POST['vh_id'] );
 				$msg = is_wp_error( $res ) ? $res->get_error_message() : __( 'Project deleted.', 'volunteer-hours' );
+				break;
+
+			case 'restore_backup':
+				// Handle uploaded backup CSV and restore data.
+				if ( empty( $_FILES['vh_backup_file'] ) || ! is_uploaded_file( $_FILES['vh_backup_file']['tmp_name'] ) ) {
+					$msg = __( 'No backup file uploaded.', 'volunteer-hours' );
+					break;
+				}
+				$replace = ! empty( $_POST['vh_restore_replace'] );
+				$tmp = $_FILES['vh_backup_file']['tmp_name'];
+				$preserve = ! empty( $_POST['vh_restore_preserve_ids'] );
+				$result = self::restore_backup_from_file( $tmp, $replace, $preserve );
+				if ( ! empty( $result['errors'] ) ) {
+					$msg = __( 'Restore completed with errors:', 'volunteer-hours' ) . ' ' . implode( ' ; ', $result['errors'] );
+				} else {
+					$msg = __( 'Backup restored successfully.', 'volunteer-hours' );
+				}
 				break;
 
 			case 'repair':
@@ -509,6 +668,16 @@ class VH_Admin {
 			<label><?php esc_html_e( 'To', 'volunteer-hours' ); ?> <input type="date" name="vh_to" value="<?php echo esc_attr( $to ); ?>" /></label>
 			<button type="submit" class="button"><?php esc_html_e( 'Run report', 'volunteer-hours' ); ?></button>
 			<span style="margin-left:12px;"><a class="button" href="<?php echo esc_url( VH_Export::unpaid_csv_url( $from, $to ) ); ?>"><?php esc_html_e( 'Export unpaid hours (CSV)', 'volunteer-hours' ); ?></a></span>
+			<span style="margin-left:8px;"><a class="button" href="<?php echo esc_url( VH_Export::backup_csv_url() ); ?>"><?php esc_html_e( 'Backup all data (CSV)', 'volunteer-hours' ); ?></a></span>
+		</form>
+
+		<form method="post" enctype="multipart/form-data" style="margin-top:10px;">
+			<?php wp_nonce_field( 'vh_admin', 'vh_nonce' ); ?>
+			<input type="hidden" name="vh_admin_action" value="restore_backup" />
+			<label><?php esc_html_e( 'Restore from backup CSV', 'volunteer-hours' ); ?> <input type="file" name="vh_backup_file" accept="text/csv" required /></label>
+			<label style="margin-left:8px;"><input type="checkbox" name="vh_restore_replace" value="1" /> <?php esc_html_e( 'Replace existing data (delete current)', 'volunteer-hours' ); ?></label>
+			<label style="margin-left:8px;"><input type="checkbox" name="vh_restore_preserve_ids" value="1" /> <?php esc_html_e( 'Preserve original numeric IDs (requires Replace)', 'volunteer-hours' ); ?></label>
+			<button type="submit" class="button" style="margin-left:8px;"><?php esc_html_e( 'Restore', 'volunteer-hours' ); ?></button>
 		</form>
 
 		<div class="vh-report-cols">

@@ -14,6 +14,7 @@ class VH_Export {
 		add_action( 'admin_post_vh_export_entries', array( $this, 'export_entries' ) );
 		add_action( 'admin_post_vh_export_report', array( $this, 'export_report' ) );
 		add_action( 'admin_post_vh_export_unpaid', array( $this, 'export_unpaid' ) );
+		add_action( 'admin_post_vh_export_backup', array( $this, 'export_backup' ) );
 	}
 
 	/* ---------- URL builders ---------- */
@@ -32,6 +33,18 @@ class VH_Export {
 			'vh_from' => $from,
 			'vh_to'   => $to,
 		) );
+	}
+
+	public static function backup_csv_url( $from = '', $to = '' ) {
+		// from/to optional; export will include full dataset when empty
+		$params = array();
+		if ( $from ) {
+			$params['vh_from'] = $from;
+		}
+		if ( $to ) {
+			$params['vh_to'] = $to;
+		}
+		return self::build_export_url( 'vh_export_backup', $params );
 	}
 
 	public static function report_csv_url( $which, $from, $to ) {
@@ -102,6 +115,40 @@ class VH_Export {
 		}
 
 		$this->send_csv( 'unpaid-hours-' . $from . '-to-' . $to . '.csv', $rows );
+	}
+
+	/**
+	 * Export complete plugin data for backup (projects, entries, entry_projects).
+	 * CSV format: rows begin with a type column: 'project' or 'entry'.
+	 * Project rows: project,id,name,active,created_at
+	 * Entry rows: entry,id,user_id,work_date,hours,description,reviewed,paid,created_at,updated_at,project_ids
+	 */
+	public function export_backup() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Insufficient permissions.', 'volunteer-hours' ) );
+		}
+		check_admin_referer( 'vh_export_admin', 'vh_nonce' );
+
+		global $wpdb;
+		$p = $wpdb->prefix;
+
+		// Projects first
+		$projects = $wpdb->get_results( "SELECT id, name, active, created_at FROM {$p}vh_projects ORDER BY id ASC" ); // phpcs:ignore
+		$rows = array();
+		$rows[] = array( 'type', 'id', 'name', 'active', 'created_at' );
+		foreach ( $projects as $pr ) {
+			$rows[] = array( 'project', (int) $pr->id, $pr->name, (int) $pr->active, $pr->created_at );
+		}
+
+		// Entries next; include project ids as comma-separated old ids
+		$entries = $wpdb->get_results( "SELECT * FROM {$p}vh_entries ORDER BY id ASC" ); // phpcs:ignore
+		$rows[] = array( 'type', 'id', 'user_id', 'work_date', 'hours', 'description', 'reviewed', 'paid', 'created_at', 'updated_at', 'project_ids' );
+		foreach ( $entries as $e ) {
+			$proj_ids = $wpdb->get_col( $wpdb->prepare( "SELECT project_id FROM {$p}vh_entry_projects WHERE entry_id = %d ORDER BY project_id ASC", (int) $e->id ) ); // phpcs:ignore
+			$rows[] = array( 'entry', (int) $e->id, (int) $e->user_id, $e->work_date, $e->hours, $e->description, (int) $e->reviewed, (int) $e->paid, $e->created_at, $e->updated_at, implode( ',', $proj_ids ) );
+		}
+
+		$this->send_csv( 'vh-backup-' . gmdate( 'Y-m-d' ) . '.csv', $rows );
 	}
 
 	/* ---------- Handlers ---------- */
