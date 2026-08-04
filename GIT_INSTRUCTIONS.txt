@@ -1,0 +1,18 @@
+Run these commands in your repository root to commit changes and create a tag:
+
+# Stage all changes
+git add -A
+
+# Commit
+git commit -m "Bump to v1.1.9: include entry id and user email in unpaid CSV export; add PHPUnit test scaffold; refactor export URL builder; update changelog"
+
+# Create annotated tag
+git tag -a v1.1.9 -m "v1.1.9: unpaid CSV includes entry id and user email; add PHPUnit tests scaffold"
+
+# Push commit and tag to origin (optional)
+# git push origin main
+# git push origin v1.1.9
+
+Notes:
+- If your branch isn't 'main', replace with the correct branch name when pushing.
+- If you want me to run these commands, ensure 'git' is available in the environment or run them locally in PowerShell.

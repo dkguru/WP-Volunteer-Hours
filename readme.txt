@@ -5,7 +5,7 @@ Tags: volunteers, hours, time tracking, reports, nonprofit
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.7
+Stable tag: 1.1.9
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -62,9 +62,17 @@ Projects with registered hours cannot be deleted, only deactivated, so history i
 
 == Changelog ==
 
+= 1.1.9 =
+* Added: unpaid CSV now includes Entry ID and User Email columns.
+* Tests: add PHPUnit test scaffold and an unpaid-export test (requires WordPress test environment).
+
+= 1.1.8 =
+* Changed: unpaid hours CSV format changed to a flat, one-row-per-entry layout with a User column. Rows are grouped implicitly by sorting (user name asc) and then by date asc.
 
 = 1.1.7 =
 * Fixed: redirects built from the current URL could duplicate the site path when WordPress is installed in a subdirectory (e.g. example.com/vh/). Post-submit redirects now build the URL from HTTP_HOST + REQUEST_URI to avoid generating /vh/vh/?vh_msg=... URLs.
+* Added: an "Export unpaid hours (CSV)" button on the Reports screen. The export now produces a flat one-row-per-entry CSV with a User column, sorted by user and then by date (ascending).
+* Refactor: export URL building consolidated into a helper to reduce duplication.
 
 = 1.1.6 =
 * Added: a dismissible message on the Volunteer Hours admin screens inviting support for Living Islands, linking to https://donorbox.org/linp

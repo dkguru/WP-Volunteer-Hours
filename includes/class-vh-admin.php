@@ -508,6 +508,7 @@ class VH_Admin {
 			<label><?php esc_html_e( 'From', 'volunteer-hours' ); ?> <input type="date" name="vh_from" value="<?php echo esc_attr( $from ); ?>" /></label>
 			<label><?php esc_html_e( 'To', 'volunteer-hours' ); ?> <input type="date" name="vh_to" value="<?php echo esc_attr( $to ); ?>" /></label>
 			<button type="submit" class="button"><?php esc_html_e( 'Run report', 'volunteer-hours' ); ?></button>
+			<span style="margin-left:12px;"><a class="button" href="<?php echo esc_url( VH_Export::unpaid_csv_url( $from, $to ) ); ?>"><?php esc_html_e( 'Export unpaid hours (CSV)', 'volunteer-hours' ); ?></a></span>
 		</form>
 
 		<div class="vh-report-cols">

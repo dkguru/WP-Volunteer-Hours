@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<phpunit bootstrap="tests/bootstrap.php"
+		 colors="true"
+		 verbose="true">
+	<testsuites>
+		<testsuite name="volunteer-hours">
+			<directory>./tests/phpunit</directory>
+		</testsuite>
+	</testsuites>
+</phpunit>

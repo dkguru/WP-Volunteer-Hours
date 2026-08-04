@@ -13,41 +13,95 @@ class VH_Export {
 		add_action( 'admin_post_vh_export_my_hours', array( $this, 'export_my_hours' ) );
 		add_action( 'admin_post_vh_export_entries', array( $this, 'export_entries' ) );
 		add_action( 'admin_post_vh_export_report', array( $this, 'export_report' ) );
+		add_action( 'admin_post_vh_export_unpaid', array( $this, 'export_unpaid' ) );
 	}
 
 	/* ---------- URL builders ---------- */
 
 	public static function entries_csv_url( $month, $user_id = 0, $project_id = 0, $status = '' ) {
-		return wp_nonce_url(
-			add_query_arg(
-				array(
-					'action'     => 'vh_export_entries',
-					'vh_month'   => $month,
-					'vh_user'    => $user_id,
-					'vh_project' => $project_id,
-					'vh_status'  => $status,
-				),
-				admin_url( 'admin-post.php' )
-			),
-			'vh_export_admin',
-			'vh_nonce'
-		);
+		return self::build_export_url( 'vh_export_entries', array(
+			'vh_month'   => $month,
+			'vh_user'    => $user_id,
+			'vh_project' => $project_id,
+			'vh_status'  => $status,
+		) );
+	}
+
+	public static function unpaid_csv_url( $from, $to ) {
+		return self::build_export_url( 'vh_export_unpaid', array(
+			'vh_from' => $from,
+			'vh_to'   => $to,
+		) );
 	}
 
 	public static function report_csv_url( $which, $from, $to ) {
-		return wp_nonce_url(
-			add_query_arg(
-				array(
-					'action'   => 'vh_export_report',
-					'vh_which' => $which,
-					'vh_from'  => $from,
-					'vh_to'    => $to,
-				),
-				admin_url( 'admin-post.php' )
-			),
-			'vh_export_admin',
-			'vh_nonce'
+		return self::build_export_url( 'vh_export_report', array(
+			'vh_which' => $which,
+			'vh_from'  => $from,
+			'vh_to'    => $to,
+		) );
+	}
+
+	/**
+	 * Helper to build admin-post export URLs with nonce.
+	 *
+	 * @param string $action admin_post action name.
+	 * @param array  $params additional query args.
+	 * @return string
+	 */
+	private static function build_export_url( $action, $params = array() ) {
+		$params = (array) $params;
+		$params['action'] = $action;
+		return wp_nonce_url( add_query_arg( $params, admin_url( 'admin-post.php' ) ), 'vh_export_admin', 'vh_nonce' );
+	}
+
+	/**
+	 * Admin: export all unpaid hours (paid = 0) grouped by user and sorted by date.
+	 */
+	public function export_unpaid() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Insufficient permissions.', 'volunteer-hours' ) );
+		}
+		check_admin_referer( 'vh_export_admin', 'vh_nonce' );
+
+		$from = isset( $_GET['vh_from'] ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', wp_unslash( $_GET['vh_from'] ) ) ? sanitize_text_field( wp_unslash( $_GET['vh_from'] ) ) : wp_date( 'Y-m-01' ); // phpcs:ignore
+		$to   = isset( $_GET['vh_to'] ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', wp_unslash( $_GET['vh_to'] ) ) ? sanitize_text_field( wp_unslash( $_GET['vh_to'] ) ) : wp_date( 'Y-m-t' ); // phpcs:ignore
+
+		$entries = VH_Data::get_entries(
+			array(
+				'from' => $from,
+				'to'   => $to,
+			)
 		);
+
+		// Keep only unpaid entries (paid == 0).
+		$unpaid = array_filter( $entries, function( $e ) {
+			return empty( $e->paid );
+		} );
+
+		// Sort flat: first by user display name, then by work_date asc, then id.
+		usort( $unpaid, function( $a, $b ) {
+			$ua = VH_Data::user_label( (int) $a->user_id );
+			$ub = VH_Data::user_label( (int) $b->user_id );
+			$cmp = strcasecmp( $ua, $ub );
+			if ( 0 !== $cmp ) {
+				return $cmp;
+			}
+			if ( $a->work_date === $b->work_date ) {
+				return $a->id <=> $b->id;
+			}
+			return strcmp( $a->work_date, $b->work_date );
+		} );
+
+		// Flat CSV: one row per entry with User column, sorted by user then date.
+		$rows = array( array( 'Date', 'Entry ID', 'User', 'User Email', 'Hours', 'Projects', 'Description', 'Reviewed' ) );
+		foreach ( $unpaid as $e ) {
+			$user = get_userdata( $e->user_id );
+			$email = $user ? $user->user_email : '';
+			$rows[] = array( $e->work_date, (int) $e->id, VH_Data::user_label( $e->user_id ), $email, VH_Frontend::fmt_hours( $e->hours ), $e->project_names, $e->description, ( (int) $e->reviewed ) ? 'Yes' : 'No' );
+		}
+
+		$this->send_csv( 'unpaid-hours-' . $from . '-to-' . $to . '.csv', $rows );
 	}
 
 	/* ---------- Handlers ---------- */
