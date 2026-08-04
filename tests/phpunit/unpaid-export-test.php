@@ -3,6 +3,7 @@
 /**
  * Tests for unpaid hours CSV export.
  */
+// No-op patch: text domain not present in this test file.
 
 class VH_Unpaid_Export_Test extends WP_UnitTestCase {
 

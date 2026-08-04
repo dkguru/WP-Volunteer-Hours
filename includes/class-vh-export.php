@@ -73,7 +73,7 @@ class VH_Export {
 	 */
 	public function export_unpaid() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Insufficient permissions.', 'volunteer-hours' ) );
+			wp_die( esc_html__( 'Insufficient permissions.', 'wp-volunteer-hours' ) );
 		}
 		check_admin_referer( 'vh_export_admin', 'vh_nonce' );
 
@@ -125,7 +125,7 @@ class VH_Export {
 	 */
 	public function export_backup() {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Insufficient permissions.', 'volunteer-hours' ) );
+			wp_die( esc_html__( 'Insufficient permissions.', 'wp-volunteer-hours' ) );
 		}
 		check_admin_referer( 'vh_export_admin', 'vh_nonce' );
 
@@ -158,7 +158,7 @@ class VH_Export {
 	 */
 	public function export_my_hours() {
 		if ( ! is_user_logged_in() ) {
-			wp_die( esc_html__( 'Please log in.', 'volunteer-hours' ) );
+			wp_die( esc_html__( 'Please log in.', 'wp-volunteer-hours' ) );
 		}
 		check_admin_referer( 'vh_export_my', 'vh_nonce' );
 

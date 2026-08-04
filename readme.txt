@@ -5,7 +5,7 @@ Tags: volunteers, hours, time tracking, reports, nonprofit
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.9
+Stable tag: 1.1.11
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -36,7 +36,7 @@ and CSV output with Excel formula-injection protection.
 
 == Installation ==
 
-1. In wp-admin, go to Plugins > Add New > Upload Plugin, choose volunteer-hours.zip, install, and activate.
+1. In wp-admin, go to Plugins > Add New > Upload Plugin, choose wp-volunteer-hours.zip, install, and activate.
 2. Go to Volunteer Hours > Projects and add your current projects.
 3. Create a page for volunteers and put the shortcode `[volunteer_hours]` in it.
 4. Ensure volunteers have accounts on the site (any role — Subscriber is enough).
@@ -61,6 +61,13 @@ Projects with registered hours cannot be deleted, only deactivated, so history i
 3. Admin reports: hours per user and hours per project with CSV export.
 
 == Changelog ==
+
+= 1.1.11 =
+* Doc: updates to includes/class-vh-admin.php documented. Changes include:
+  - Refactor: restore logic moved into restore_backup_from_file() helper for clearer separation of parsing and DB operations.
+  - Feature: added "Preserve original numeric IDs" option (requires Replace) to the Restore form.
+  - Safety: restore now returns per-row error details surfaced to the admin notice after completion.
+  - Robustness: when preserving IDs, AUTO_INCREMENT for affected tables is adjusted to avoid future collisions.
 
 = 1.1.10 =
 * Added: Backup and Restore functionality. Admins can download a full CSV backup (projects + entries) and restore it via the Reports screen. Restore supports an option to replace existing data and to preserve original numeric IDs (use with caution).

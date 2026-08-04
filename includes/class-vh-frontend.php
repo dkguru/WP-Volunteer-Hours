@@ -23,7 +23,7 @@ class VH_Frontend {
 			return;
 		}
 		if ( ! isset( $_POST['vh_nonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['vh_nonce'] ), 'vh_front' ) ) {
-			wp_die( esc_html__( 'Security check failed. Please go back and try again.', 'volunteer-hours' ) );
+			wp_die( esc_html__( 'Security check failed. Please go back and try again.', 'wp-volunteer-hours' ) );
 		}
 
 		$user_id  = get_current_user_id();
@@ -47,10 +47,10 @@ class VH_Frontend {
 			if ( $entry_id ) {
 				$existing = VH_Data::get_entry( $entry_id );
 				if ( ! $existing || (int) $existing->user_id !== $user_id ) {
-					wp_die( esc_html__( 'You can only edit your own entries.', 'volunteer-hours' ) );
+				wp_die( esc_html__( 'You can only edit your own entries.', 'wp-volunteer-hours' ) );
 				}
 				if ( (int) $existing->paid ) {
-					wp_safe_redirect( add_query_arg( 'vh_msg', rawurlencode( __( 'This entry has been paid and can no longer be changed. Please contact an administrator.', 'volunteer-hours' ) ), $redirect ) );
+					wp_safe_redirect( add_query_arg( 'vh_msg', rawurlencode( __( 'This entry has been paid and can no longer be changed. Please contact an administrator.', 'wp-volunteer-hours' ) ), $redirect ) );
 					exit;
 				}
 			}
@@ -79,10 +79,10 @@ class VH_Frontend {
 			$entry_id = isset( $_POST['vh_entry_id'] ) ? (int) $_POST['vh_entry_id'] : 0;
 			$existing = VH_Data::get_entry( $entry_id );
 			if ( ! $existing || (int) $existing->user_id !== $user_id ) {
-				wp_die( esc_html__( 'You can only delete your own entries.', 'volunteer-hours' ) );
+			wp_die( esc_html__( 'You can only delete your own entries.', 'wp-volunteer-hours' ) );
 			}
 			if ( (int) $existing->paid ) {
-				wp_safe_redirect( add_query_arg( 'vh_msg', rawurlencode( __( 'This entry has been paid and can no longer be deleted. Please contact an administrator.', 'volunteer-hours' ) ), $redirect ) );
+				wp_safe_redirect( add_query_arg( 'vh_msg', rawurlencode( __( 'This entry has been paid and can no longer be deleted. Please contact an administrator.', 'wp-volunteer-hours' ) ), $redirect ) );
 				exit;
 			}
 			VH_Data::delete_entry( $entry_id );
@@ -114,9 +114,9 @@ class VH_Frontend {
 	public function render() {
 		if ( ! is_user_logged_in() ) {
 			return '<p>' . sprintf(
-				/* translators: %s: login link */
-				esc_html__( 'Please %s to register your volunteer hours.', 'volunteer-hours' ),
-				'<a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">' . esc_html__( 'log in', 'volunteer-hours' ) . '</a>'
+			/* translators: %s: login link */
+			esc_html__( 'Please %s to register your volunteer hours.', 'wp-volunteer-hours' ),
+				'<a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">' . esc_html__( 'log in', 'wp-volunteer-hours' ) . '</a>'
 			) . '</p>';
 		}
 
@@ -161,11 +161,11 @@ class VH_Frontend {
 			return;
 		}
 		$msg = sanitize_text_field( wp_unslash( $_GET['vh_msg'] ) );
-		$map = array(
-			'saved'   => __( 'Hours registered.', 'volunteer-hours' ),
-			'updated' => __( 'Entry updated.', 'volunteer-hours' ),
-			'deleted' => __( 'Entry deleted.', 'volunteer-hours' ),
-		);
+			$map = array(
+				'saved'   => __( 'Hours registered.', 'wp-volunteer-hours' ),
+				'updated' => __( 'Entry updated.', 'wp-volunteer-hours' ),
+				'deleted' => __( 'Entry deleted.', 'wp-volunteer-hours' ),
+			);
 		$text  = isset( $map[ $msg ] ) ? $map[ $msg ] : $msg;
 		$class = isset( $map[ $msg ] ) ? 'vh-notice' : 'vh-notice vh-error';
 		echo '<p class="' . esc_attr( $class ) . '">' . esc_html( $text ) . '</p>';
@@ -174,9 +174,9 @@ class VH_Frontend {
 	private function render_form( $projects, $edit ) {
 		$is_edit = (bool) $edit;
 		?>
-		<h3><?php echo $is_edit ? esc_html__( 'Edit entry', 'volunteer-hours' ) : esc_html__( 'Register hours', 'volunteer-hours' ); ?></h3>
+		<h3><?php echo $is_edit ? esc_html__( 'Edit entry', 'wp-volunteer-hours' ) : esc_html__( 'Register hours', 'wp-volunteer-hours' ); ?></h3>
 		<?php if ( empty( $projects ) ) : ?>
-			<p><?php esc_html_e( 'No projects have been set up yet. Please ask an administrator to add projects first.', 'volunteer-hours' ); ?></p>
+			<p><?php esc_html_e( 'No projects have been set up yet. Please ask an administrator to add projects first.', 'wp-volunteer-hours' ); ?></p>
 			<?php
 			return;
 		endif;
@@ -187,18 +187,18 @@ class VH_Frontend {
 			<input type="hidden" name="vh_entry_id" value="<?php echo esc_attr( $is_edit ? $edit->id : 0 ); ?>" />
 
 			<p>
-				<label for="vh_date"><?php esc_html_e( 'Date worked', 'volunteer-hours' ); ?></label><br />
+				<label for="vh_date"><?php esc_html_e( 'Date worked', 'wp-volunteer-hours' ); ?></label><br />
 				<input type="date" id="vh_date" name="vh_date" required
 					value="<?php echo esc_attr( $is_edit ? $edit->work_date : wp_date( 'Y-m-d' ) ); ?>"
 					max="<?php echo esc_attr( wp_date( 'Y-m-d' ) ); ?>" />
 			</p>
 			<p>
-				<label for="vh_hours"><?php esc_html_e( 'Hours worked', 'volunteer-hours' ); ?></label><br />
+				<label for="vh_hours"><?php esc_html_e( 'Hours worked', 'wp-volunteer-hours' ); ?></label><br />
 				<input type="number" id="vh_hours" name="vh_hours" required step="0.25" min="0.25" max="24"
 					value="<?php echo esc_attr( $is_edit ? $edit->hours : '' ); ?>" />
 			</p>
 			<p>
-				<label><?php esc_html_e( 'Projects (check all that apply)', 'volunteer-hours' ); ?></label><br />
+				<label><?php esc_html_e( 'Projects (check all that apply)', 'wp-volunteer-hours' ); ?></label><br />
 				<?php
 				$checked_ids = $is_edit ? $edit->project_ids : array();
 				foreach ( $projects as $pr ) :
@@ -211,13 +211,13 @@ class VH_Frontend {
 				<?php endforeach; ?>
 			</p>
 			<p>
-				<label for="vh_description"><?php esc_html_e( 'Description of work', 'volunteer-hours' ); ?></label><br />
+				<label for="vh_description"><?php esc_html_e( 'Description of work', 'wp-volunteer-hours' ); ?></label><br />
 				<textarea id="vh_description" name="vh_description" rows="3" cols="50"><?php echo esc_textarea( $is_edit ? $edit->description : '' ); ?></textarea>
 			</p>
 			<p>
-				<button type="submit"><?php echo $is_edit ? esc_html__( 'Update entry', 'volunteer-hours' ) : esc_html__( 'Register hours', 'volunteer-hours' ); ?></button>
+				<button type="submit"><?php echo $is_edit ? esc_html__( 'Update entry', 'wp-volunteer-hours' ) : esc_html__( 'Register hours', 'wp-volunteer-hours' ); ?></button>
 				<?php if ( $is_edit ) : ?>
-					<a href="<?php echo esc_url( remove_query_arg( array( 'vh_edit', 'vh_msg' ) ) ); ?>"><?php esc_html_e( 'Cancel', 'volunteer-hours' ); ?></a>
+				<a href="<?php echo esc_url( remove_query_arg( array( 'vh_edit', 'vh_msg' ) ) ); ?>"><?php esc_html_e( 'Cancel', 'wp-volunteer-hours' ); ?></a>
 				<?php endif; ?>
 			</p>
 		</form>
@@ -227,7 +227,7 @@ class VH_Frontend {
 	private function render_my_hours( $entries, $month, $total ) {
 		$base = remove_query_arg( array( 'vh_edit', 'vh_msg' ) );
 		?>
-		<h3><?php esc_html_e( 'My hours', 'volunteer-hours' ); ?></h3>
+			<h3><?php esc_html_e( 'My hours', 'wp-volunteer-hours' ); ?></h3>
 		<form method="get" class="vh-month-filter">
 			<?php
 			// Preserve non-vh query args (e.g. page id on plain permalinks).
@@ -237,13 +237,13 @@ class VH_Frontend {
 				}
 			}
 			?>
-			<label for="vh_month"><?php esc_html_e( 'Month', 'volunteer-hours' ); ?></label>
+				<label for="vh_month"><?php esc_html_e( 'Month', 'wp-volunteer-hours' ); ?></label>
 			<input type="month" id="vh_month" name="vh_month" value="<?php echo esc_attr( $month ); ?>" />
-			<button type="submit"><?php esc_html_e( 'Show', 'volunteer-hours' ); ?></button>
+				<button type="submit"><?php esc_html_e( 'Show', 'wp-volunteer-hours' ); ?></button>
 		</form>
 
 		<?php if ( empty( $entries ) ) : ?>
-			<p><?php esc_html_e( 'No hours registered for this month.', 'volunteer-hours' ); ?></p>
+				<p><?php esc_html_e( 'No hours registered for this month.', 'wp-volunteer-hours' ); ?></p>
 			<?php
 			return;
 		endif;
@@ -251,12 +251,12 @@ class VH_Frontend {
 		<table class="vh-table">
 			<thead>
 				<tr>
-					<th><?php esc_html_e( 'Date', 'volunteer-hours' ); ?></th>
-					<th><?php esc_html_e( 'Hours', 'volunteer-hours' ); ?></th>
-					<th><?php esc_html_e( 'Projects', 'volunteer-hours' ); ?></th>
-					<th><?php esc_html_e( 'Description', 'volunteer-hours' ); ?></th>
-					<th><?php esc_html_e( 'Status', 'volunteer-hours' ); ?></th>
-					<th class="vh-noprint"><?php esc_html_e( 'Actions', 'volunteer-hours' ); ?></th>
+					<th><?php esc_html_e( 'Date', 'wp-volunteer-hours' ); ?></th>
+					<th><?php esc_html_e( 'Hours', 'wp-volunteer-hours' ); ?></th>
+					<th><?php esc_html_e( 'Projects', 'wp-volunteer-hours' ); ?></th>
+					<th><?php esc_html_e( 'Description', 'wp-volunteer-hours' ); ?></th>
+					<th><?php esc_html_e( 'Status', 'wp-volunteer-hours' ); ?></th>
+					<th class="vh-noprint"><?php esc_html_e( 'Actions', 'wp-volunteer-hours' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -271,12 +271,12 @@ class VH_Frontend {
 							<?php if ( (int) $e->paid ) : ?>
 								&mdash;
 							<?php else : ?>
-								<a href="<?php echo esc_url( add_query_arg( 'vh_edit', (int) $e->id, $base ) ); ?>"><?php esc_html_e( 'Edit', 'volunteer-hours' ); ?></a>
-								<form method="post" class="vh-inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this entry?', 'volunteer-hours' ) ); ?>');">
+					<a href="<?php echo esc_url( add_query_arg( 'vh_edit', (int) $e->id, $base ) ); ?>"><?php esc_html_e( 'Edit', 'wp-volunteer-hours' ); ?></a>
+					<form method="post" class="vh-inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this entry?', 'wp-volunteer-hours' ) ); ?>');">
 									<?php wp_nonce_field( 'vh_front', 'vh_nonce' ); ?>
 									<input type="hidden" name="vh_action" value="delete" />
 									<input type="hidden" name="vh_entry_id" value="<?php echo esc_attr( $e->id ); ?>" />
-									<button type="submit" class="vh-link"><?php esc_html_e( 'Delete', 'volunteer-hours' ); ?></button>
+						<button type="submit" class="vh-link"><?php esc_html_e( 'Delete', 'wp-volunteer-hours' ); ?></button>
 								</form>
 							<?php endif; ?>
 						</td>
@@ -285,7 +285,7 @@ class VH_Frontend {
 			</tbody>
 			<tfoot>
 				<tr>
-					<th><?php esc_html_e( 'Total', 'volunteer-hours' ); ?></th>
+					<th><?php esc_html_e( 'Total', 'wp-volunteer-hours' ); ?></th>
 					<th><?php echo esc_html( self::fmt_hours( $total ) ); ?></th>
 					<th colspan="4"></th>
 				</tr>
@@ -293,8 +293,8 @@ class VH_Frontend {
 		</table>
 
 		<p class="vh-noprint">
-			<a class="vh-button" href="<?php echo esc_url( self::my_csv_url( $month ) ); ?>"><?php esc_html_e( 'Download CSV', 'volunteer-hours' ); ?></a>
-			<a class="vh-button" href="<?php echo esc_url( add_query_arg( array( 'vh_print' => 1, 'vh_month' => $month ), $base ) ); ?>"><?php esc_html_e( 'Print / Save as PDF', 'volunteer-hours' ); ?></a>
+			<a class="vh-button" href="<?php echo esc_url( self::my_csv_url( $month ) ); ?>"><?php esc_html_e( 'Download CSV', 'wp-volunteer-hours' ); ?></a>
+			<a class="vh-button" href="<?php echo esc_url( add_query_arg( array( 'vh_print' => 1, 'vh_month' => $month ), $base ) ); ?>"><?php esc_html_e( 'Print / Save as PDF', 'wp-volunteer-hours' ); ?></a>
 		</p>
 		<?php
 	}
@@ -342,7 +342,7 @@ class VH_Frontend {
 <html <?php language_attributes(); ?>>
 <head>
 <meta charset="utf-8" />
-<title><?php esc_html_e( 'Volunteer hours', 'volunteer-hours' ); ?> — <?php echo esc_html( $month ); ?></title>
+<title><?php esc_html_e( 'Volunteer hours', 'wp-volunteer-hours' ); ?> — <?php echo esc_html( $month ); ?></title>
 <style>
 body { font-family: Arial, Helvetica, sans-serif; margin: 2em; color: #111; }
 table { border-collapse: collapse; width: 100%; margin-top: 1em; }
@@ -352,20 +352,20 @@ tfoot th { background: #eee; }
 </style>
 </head>
 <body>
-<h1><?php esc_html_e( 'Volunteer hours', 'volunteer-hours' ); ?></h1>
+<h1><?php esc_html_e( 'Volunteer hours', 'wp-volunteer-hours' ); ?></h1>
 <p>
-	<strong><?php esc_html_e( 'Volunteer:', 'volunteer-hours' ); ?></strong> <?php echo esc_html( VH_Data::user_label( $user_id ) ); ?><br />
-	<strong><?php esc_html_e( 'Month:', 'volunteer-hours' ); ?></strong> <?php echo esc_html( $month ); ?><br />
-	<strong><?php esc_html_e( 'Generated:', 'volunteer-hours' ); ?></strong> <?php echo esc_html( wp_date( 'Y-m-d H:i' ) ); ?>
+	<strong><?php esc_html_e( 'Volunteer:', 'wp-volunteer-hours' ); ?></strong> <?php echo esc_html( VH_Data::user_label( $user_id ) ); ?><br />
+	<strong><?php esc_html_e( 'Month:', 'wp-volunteer-hours' ); ?></strong> <?php echo esc_html( $month ); ?><br />
+	<strong><?php esc_html_e( 'Generated:', 'wp-volunteer-hours' ); ?></strong> <?php echo esc_html( wp_date( 'Y-m-d H:i' ) ); ?>
 </p>
 <table>
 	<thead>
 		<tr>
-			<th><?php esc_html_e( 'Date', 'volunteer-hours' ); ?></th>
-			<th><?php esc_html_e( 'Hours', 'volunteer-hours' ); ?></th>
-			<th><?php esc_html_e( 'Projects', 'volunteer-hours' ); ?></th>
-			<th><?php esc_html_e( 'Description', 'volunteer-hours' ); ?></th>
-			<th><?php esc_html_e( 'Status', 'volunteer-hours' ); ?></th>
+			<th><?php esc_html_e( 'Date', 'wp-volunteer-hours' ); ?></th>
+			<th><?php esc_html_e( 'Hours', 'wp-volunteer-hours' ); ?></th>
+			<th><?php esc_html_e( 'Projects', 'wp-volunteer-hours' ); ?></th>
+			<th><?php esc_html_e( 'Description', 'wp-volunteer-hours' ); ?></th>
+			<th><?php esc_html_e( 'Status', 'wp-volunteer-hours' ); ?></th>
 		</tr>
 	</thead>
 	<tbody>
@@ -379,7 +379,7 @@ tfoot th { background: #eee; }
 		</tr>
 		<?php endforeach; ?>
 		<?php if ( empty( $entries ) ) : ?>
-		<tr><td colspan="5"><?php esc_html_e( 'No hours registered for this month.', 'volunteer-hours' ); ?></td></tr>
+			<tr><td colspan="5"><?php esc_html_e( 'No hours registered for this month.', 'wp-volunteer-hours' ); ?></td></tr>
 		<?php endif; ?>
 	</tbody>
 	<tfoot>
@@ -391,8 +391,8 @@ tfoot th { background: #eee; }
 	</tfoot>
 </table>
 <p class="vh-noprint">
-	<button onclick="window.print()"><?php esc_html_e( 'Print / Save as PDF', 'volunteer-hours' ); ?></button>
-	<a href="<?php echo esc_url( remove_query_arg( 'vh_print' ) ); ?>"><?php esc_html_e( 'Back', 'volunteer-hours' ); ?></a>
+	<button onclick="window.print()"><?php esc_html_e( 'Print / Save as PDF', 'wp-volunteer-hours' ); ?></button>
+	<a href="<?php echo esc_url( remove_query_arg( 'vh_print' ) ); ?>"><?php esc_html_e( 'Back', 'wp-volunteer-hours' ); ?></a>
 </p>
 </body>
 </html>

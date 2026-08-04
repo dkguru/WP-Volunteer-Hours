@@ -7,6 +7,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+
+class VH_Admin {
+
 	/**
 	 * Restore backup CSV from an uploaded temp file.
 	 *
@@ -18,17 +21,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	public static function restore_backup_from_file( $tmp, $replace = false, $preserve_ids = false ) {
 		$result = array( 'errors' => array(), 'projects' => 0, 'entries' => 0 );
 		if ( ! is_readable( $tmp ) ) {
-			$result['errors'][] = __( 'Uploaded file not readable.', 'volunteer-hours' );
+			$result['errors'][] = __( 'Uploaded file not readable.', 'wp-volunteer-hours' );
 			return $result;
 		}
 
 		if ( $preserve_ids && ! $replace ) {
-			$result['errors'][] = __( 'Preserve IDs requires Replace existing data option.', 'volunteer-hours' );
+			$result['errors'][] = __( 'Preserve IDs requires Replace existing data option.', 'wp-volunteer-hours' );
 			$preserve_ids = false;
 		}
 
 		if ( false === ( $fh = fopen( $tmp, 'r' ) ) ) {
-			$result['errors'][] = __( 'Could not open uploaded file.', 'volunteer-hours' );
+			$result['errors'][] = __( 'Could not open uploaded file.', 'wp-volunteer-hours' );
 			return $result;
 		}
 
@@ -85,14 +88,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 			if ( $preserve_ids && $old > 0 ) {
 				$ok = $wpdb->insert( $p . 'vh_projects', array( 'id' => $old, 'name' => $pr['name'], 'active' => $pr['active'], 'created_at' => $pr['created_at'] ), array( '%d', '%s', '%d', '%s' ) );
 				if ( false === $ok ) {
-					$result['errors'][] = sprintf( __( 'Failed to insert project %s (old id %d): %s', 'volunteer-hours' ), $pr['name'], $old, $wpdb->last_error );
+					$result['errors'][] = sprintf( __( 'Failed to insert project %s (old id %d): %s', 'wp-volunteer-hours' ), $pr['name'], $old, $wpdb->last_error );
 					continue;
 				}
 				$proj_map[ $old ] = (int) $old;
 			} else {
 				$ok = $wpdb->insert( $p . 'vh_projects', array( 'name' => $pr['name'], 'active' => $pr['active'], 'created_at' => $pr['created_at'] ), array( '%s', '%d', '%s' ) );
 				if ( false === $ok ) {
-					$result['errors'][] = sprintf( __( 'Failed to insert project %s: %s', 'volunteer-hours' ), $pr['name'], $wpdb->last_error );
+					$result['errors'][] = sprintf( __( 'Failed to insert project %s: %s', 'wp-volunteer-hours' ), $pr['name'], $wpdb->last_error );
 					continue;
 				}
 				$proj_map[ $old ] = (int) $wpdb->insert_id;
@@ -113,14 +116,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 			if ( $preserve_ids && $en['old_id'] > 0 ) {
 				$ok = $wpdb->insert( $p . 'vh_entries', array( 'id' => $en['old_id'], 'user_id' => $en['user_id'], 'work_date' => $en['work_date'], 'hours' => $en['hours'], 'description' => $en['description'], 'reviewed' => $en['reviewed'], 'paid' => $en['paid'], 'created_at' => $en['created_at'], 'updated_at' => $en['updated_at'] ), array( '%d', '%d', '%s', '%f', '%s', '%d', '%d', '%s', '%s' ) );
 				if ( false === $ok ) {
-					$result['errors'][] = sprintf( __( 'Failed to insert entry old id %d: %s', 'volunteer-hours' ), $en['old_id'], $wpdb->last_error );
+					$result['errors'][] = sprintf( __( 'Failed to insert entry old id %d: %s', 'wp-volunteer-hours' ), $en['old_id'], $wpdb->last_error );
 					continue;
 				}
 				$new_eid = (int) $en['old_id'];
 			} else {
 				$ok = $wpdb->insert( $p . 'vh_entries', array( 'user_id' => $en['user_id'], 'work_date' => $en['work_date'], 'hours' => $en['hours'], 'description' => $en['description'], 'reviewed' => $en['reviewed'], 'paid' => $en['paid'], 'created_at' => $en['created_at'], 'updated_at' => $en['updated_at'] ), array( '%d', '%s', '%f', '%s', '%d', '%d', '%s', '%s' ) );
 				if ( false === $ok ) {
-					$result['errors'][] = sprintf( __( 'Failed to insert entry for user %d: %s', 'volunteer-hours' ), $en['user_id'], $wpdb->last_error );
+					$result['errors'][] = sprintf( __( 'Failed to insert entry for user %d: %s', 'wp-volunteer-hours' ), $en['user_id'], $wpdb->last_error );
 					continue;
 				}
 				$new_eid = (int) $wpdb->insert_id;
@@ -148,8 +151,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		return $result;
 	}
-
-class VH_Admin {
 
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'menu' ) );
